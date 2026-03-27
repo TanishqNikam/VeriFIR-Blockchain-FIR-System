@@ -4,6 +4,7 @@
  * Body: { name, email, password, role }
  */
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import UserModel, { hashPassword } from "@/lib/models/User";
 import type { UserRole } from "@/lib/types";
@@ -20,8 +21,9 @@ export async function POST(req: Request) {
     if (!VALID_ROLES.includes(role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+    // Enforce minimum length consistent with reset-password endpoint
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
     }
 
     await connectDB();
@@ -31,7 +33,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
     }
 
-    const userId = `${role}-${Date.now()}`;
+    // Use random hex suffix instead of timestamp to avoid collisions under concurrent registration
+    const userId = `${role}-${crypto.randomBytes(4).toString("hex")}`;
     await UserModel.create({
       userId,
       email: email.toLowerCase().trim(),

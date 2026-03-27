@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, CheckCircle, XCircle, Shield, Loader2, Hash, FileText, AlertCircle, ShieldCheck, ShieldAlert, ChevronDown } from "lucide-react"
+import { Search, CheckCircle, XCircle, Shield, Loader2, Hash, FileText, AlertCircle, ShieldCheck, ShieldAlert, ChevronDown, DatabaseZap } from "lucide-react"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import type { FIR } from "@/lib/types"
 import { useLanguage } from "@/lib/i18n/language-context"
@@ -25,12 +25,37 @@ type VerificationResult = {
   message: string
 }
 
+interface DeepVerifyResult {
+  firId: string
+  ipfsCid: string
+  ipfsFetched: boolean
+  ipfsHash: string | null
+  chainHash: string | null
+  dbStoredHash: string
+  deepVerified: boolean
+  canVerify: boolean
+}
+
 export default function VerifyFIRPage() {
   const [searchValue, setSearchValue] = useState("")
   const [isVerifying, setIsVerifying] = useState(false)
   const [result, setResult] = useState<VerificationResult | null>(null)
   const [showTechDetails, setShowTechDetails] = useState(false)
+  const [isDeepVerifying, setIsDeepVerifying] = useState(false)
+  const [deepVerifyResult, setDeepVerifyResult] = useState<DeepVerifyResult | null>(null)
   const { t } = useLanguage()
+
+  const handleDeepVerify = async () => {
+    if (!result?.fir) return
+    setIsDeepVerifying(true)
+    setDeepVerifyResult(null)
+    try {
+      const res = await fetch(`/api/fir/${result.fir.id}/deep-verify`)
+      if (res.ok) setDeepVerifyResult(await res.json())
+    } catch { /* ignore */ } finally {
+      setIsDeepVerifying(false)
+    }
+  }
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -247,6 +272,49 @@ export default function VerifyFIRPage() {
                               {result.hashMatch
                                 ? <><CheckCircle className="h-3.5 w-3.5 text-success" /><span className="text-xs text-success">{t("fir.hashMatchLong")}</span></>
                                 : <><XCircle className="h-3.5 w-3.5 text-destructive" /><span className="text-xs text-destructive">{t("fir.hashMismatchLong")}</span></>}
+                            </div>
+
+                            {/* IPFS Deep Verify */}
+                            <div className="pt-2 border-t border-border">
+                              <p className="text-xs text-muted-foreground mb-2">
+                                Deep verification fetches data directly from IPFS and re-checks against the blockchain — bypasses the database entirely.
+                              </p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={handleDeepVerify}
+                                disabled={isDeepVerifying}
+                              >
+                                {isDeepVerifying
+                                  ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Fetching from IPFS…</>
+                                  : <><DatabaseZap className="mr-1.5 h-3 w-3" />Run IPFS Deep Verify</>}
+                              </Button>
+                              {deepVerifyResult && (
+                                <div className={`mt-2 rounded p-2 text-xs ${deepVerifyResult.deepVerified ? "bg-success/10 border border-success/20" : !deepVerifyResult.canVerify ? "bg-secondary" : "bg-destructive/10 border border-destructive/20"}`}>
+                                  {!deepVerifyResult.ipfsFetched && (
+                                    <p className="text-muted-foreground">IPFS gateway unreachable — try again later.</p>
+                                  )}
+                                  {deepVerifyResult.ipfsFetched && deepVerifyResult.deepVerified && (
+                                    <div className="flex items-center gap-1.5 text-success">
+                                      <CheckCircle className="h-3.5 w-3.5" />
+                                      <span>IPFS data matches blockchain hash — data is authentic end-to-end.</span>
+                                    </div>
+                                  )}
+                                  {deepVerifyResult.ipfsFetched && !deepVerifyResult.deepVerified && deepVerifyResult.canVerify && (
+                                    <div className="flex items-center gap-1.5 text-destructive">
+                                      <XCircle className="h-3.5 w-3.5" />
+                                      <span>IPFS hash does not match blockchain — IPFS data may have been replaced.</span>
+                                    </div>
+                                  )}
+                                  {deepVerifyResult.ipfsHash && (
+                                    <div className="mt-1.5">
+                                      <span className="text-muted-foreground">IPFS hash: </span>
+                                      <code className="font-mono">{deepVerifyResult.ipfsHash.slice(0, 20)}…</code>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </CollapsibleContent>
                         </Collapsible>

@@ -9,14 +9,32 @@
  * Only allowed when FIR status is pending or under-verification.
  */
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import FIRModel from "@/lib/models/FIR";
 import { uploadFileToPinata } from "@/lib/ipfs";
 import { validateFiles } from "@/lib/file-validation";
+import { updateFIRStatusOnChain } from "@/lib/blockchain";
+import { requireSession, isAuthError } from "@/lib/api-auth";
+import { logAudit } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(req: Request, { params }: Ctx) {
+  const auth = await requireSession(["citizen", "police"]);
+  if (isAuthError(auth)) return auth;
+  const { session } = auth;
+
+  // Rate limit: max 20 evidence uploads per hour per user to prevent IPFS spam
+  const rl = rateLimit(`evidence:${session.userId}`, 20, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many uploads. Please wait before uploading more evidence." },
+      { status: 429 }
+    );
+  }
+
   const { id } = await params;
   try {
     await connectDB();
@@ -49,9 +67,10 @@ export async function POST(req: Request, { params }: Ctx) {
       );
     }
 
-    const uploaderRole = (formData.get("uploaderRole") as string | null) ?? "citizen";
-    const uploadedBy = (formData.get("uploadedBy") as string | null) ?? "";
-    const uploadedById = (formData.get("uploadedById") as string | null) ?? "";
+    // Use session role/identity — never trust client-supplied uploaderRole
+    const uploaderRole = session.role === "police" ? "police" : "citizen";
+    const uploadedBy = session.name;
+    const uploadedById = session.userId;
     const isPolice = uploaderRole === "police";
 
     const added: { name: string; type: string; size: number; ipfsCid: string }[] = [];
@@ -84,6 +103,34 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     await fir.save();
+
+    // ── Audit log ─────────────────────────────────────────────────────────────
+    logAudit({
+      action: "EVIDENCE_UPLOADED",
+      firId: id,
+      actorId: uploadedById,
+      actorName: uploadedBy,
+      actorRole: uploaderRole,
+      details: `${added.length} file(s) uploaded via ${uploaderRole} portal: ${added.map((f) => f.name).join(", ")}`,
+    }).catch(() => {});
+
+    // ── Anchor police evidence batch on-chain ─────────────────────────────────
+    // Compute a SHA-256 fingerprint of the uploaded CIDs and write it on-chain
+    // as a StatusUpdated event. This creates an immutable record that this exact
+    // batch of evidence existed at this block — auditors can verify CIDs match.
+    if (isPolice && added.length > 0) {
+      const batchFingerprint = crypto
+        .createHash("sha256")
+        .update(JSON.stringify(added.map((f) => f.ipfsCid).sort()))
+        .digest("hex")
+        .slice(0, 32);
+      updateFIRStatusOnChain(
+        id,
+        `evidence-added:${batchFingerprint}`,
+        "police"
+      ).catch(() => {});
+    }
+
     return NextResponse.json({
       success: true,
       firId: id,

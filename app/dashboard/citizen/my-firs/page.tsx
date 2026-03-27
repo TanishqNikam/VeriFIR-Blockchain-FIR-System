@@ -8,6 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { Search, Eye, ExternalLink } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useAuth } from "@/lib/auth-context"
 import { useFIRs } from "@/hooks/use-firs"
 import { useLanguage } from "@/lib/i18n/language-context"
@@ -16,13 +23,17 @@ export default function MyFIRsPage() {
   const { user } = useAuth()
   const { firs: myFIRs, loading, error } = useFIRs({ citizenId: user?.id })
   const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const { t } = useLanguage()
 
-  const filteredFIRs = myFIRs.filter(
-    (fir) =>
+  const filteredFIRs = myFIRs.filter((fir) => {
+    const matchesSearch =
       fir.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fir.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+      fir.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      fir.location?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === "all" || fir.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   return (
     <div className="space-y-6">
@@ -37,8 +48,8 @@ export default function MyFIRsPage() {
           <CardDescription>{t("citizen.myFirs.cardDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <div className="relative">
+          <div className="mb-4 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t("citizen.myFirs.searchPlaceholder")}
@@ -47,6 +58,18 @@ export default function MyFIRsPage() {
                 className="pl-9"
               />
             </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="under-verification">Under Review</SelectItem>
+                <SelectItem value="verified">Verified</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="rounded-md border">

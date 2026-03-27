@@ -23,7 +23,12 @@ export default function CitizenLayout({ children }: { children: React.ReactNode 
     }
   }, [isLoading, isAuthenticated, user, router])
 
-  if (isLoading || !isAuthenticated || user?.role !== "citizen") return null
+  if (isLoading) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  )
+  if (!isAuthenticated || user?.role !== "citizen") return null
 
   const navItems: NavItem[] = [
     { label: t("sidebar.citizenNav.dashboard"), href: "/dashboard/citizen", icon: LayoutDashboard },

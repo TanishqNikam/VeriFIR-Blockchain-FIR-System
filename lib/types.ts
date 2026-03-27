@@ -6,6 +6,8 @@ export interface User {
   name: string
   role: UserRole
   walletAddress?: string
+  /** Jurisdiction pincode (police officers only) */
+  pincode?: string
 }
 
 export type FIRStatus = "pending" | "under-verification" | "verified" | "rejected"
@@ -19,6 +21,16 @@ export interface FIRNote {
   createdAt: string
 }
 
+// Extended NCRB I.I.F.-I sub-types
+export interface FIRActSection { act: string; sections: string }
+export interface FIRAccused { name: string; alias?: string; relativeName?: string; address?: string }
+export interface FIRPropertyDetail { category: string; type: string; description: string; value: number }
+export interface FIRComplainantDetails {
+  fathersName?: string; dob?: string; nationality?: string; occupation?: string
+  mobile?: string; currentAddress?: string; permanentAddress?: string
+  idProofType?: string; idProofNumber?: string; uid?: string
+}
+
 export interface FIR {
   id: string
   title: string
@@ -29,6 +41,7 @@ export interface FIR {
   status: FIRStatus
   citizenId: string
   citizenName: string
+  pincode?: string
   policeVerifierId?: string
   policeVerifierName?: string
   rejectionReason?: string
@@ -44,6 +57,38 @@ export interface FIR {
   evidenceFiles: EvidenceFile[]
   policeEvidenceFiles?: PoliceEvidenceFile[]
   notes?: FIRNote[]
+  // On-chain data (populated by GET /api/fir/:id — null when blockchain unavailable)
+  onChainStatusHistory?: OnChainStatusEntry[] | null
+  onChainVerification?: OnChainVerificationRecord | null
+  // Extended NCRB I.I.F.-I fields
+  district?: string
+  policeStation?: string
+  acts?: FIRActSection[]
+  incidentDateTo?: string
+  incidentTimeFrom?: string
+  incidentTimeTo?: string
+  typeOfInformation?: "written" | "oral"
+  placeAddress?: string
+  distanceFromPS?: string
+  beatNo?: string
+  complainantDetails?: FIRComplainantDetails
+  accusedDetails?: FIRAccused[]
+  delayReason?: string
+  propertyDetails?: FIRPropertyDetail[]
+  totalPropertyValue?: number
+  firstInformationContents?: string
+}
+
+export interface OnChainStatusEntry {
+  status: string
+  updatedBy: string
+  timestamp: number
+}
+
+export interface OnChainVerificationRecord {
+  verifiedBy: string
+  timestamp: number
+  exists: boolean
 }
 
 export interface EvidenceFile {

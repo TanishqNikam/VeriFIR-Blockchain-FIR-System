@@ -12,6 +12,11 @@ export interface IUser extends Document {
   name: string;
   role: "citizen" | "police" | "admin";
   walletAddress?: string;
+  /**
+   * Jurisdiction pincode for police officers.
+   * FIRs filed with matching pincode are visible only to this officer.
+   */
+  pincode?: string;
   /** Hashed reset token (sha256 of the plaintext token sent in the email) */
   passwordResetToken?: string;
   /** Token expiry — valid for 1 hour from issue */
@@ -27,6 +32,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true },
     role: { type: String, enum: ["citizen", "police", "admin"], required: true },
     walletAddress: { type: String },
+    pincode: { type: String, index: true },
     passwordResetToken: { type: String },
     passwordResetExpiry: { type: Date },
   },

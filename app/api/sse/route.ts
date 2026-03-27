@@ -11,8 +11,12 @@
  *   data: {"type":"ping"}\n\n   (keepalive every 20s)
  */
 import emitter, { type FIRUpdateEvent, type NewFIREvent } from "@/lib/sse-emitter";
+import { initContractEventListener } from "@/lib/blockchain";
 
 export const dynamic = "force-dynamic"; // never cache this route
+
+// Bridge on-chain contract events → SSE emitter (once per process)
+try { initContractEventListener(); } catch { /* blockchain node may be offline */ }
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);

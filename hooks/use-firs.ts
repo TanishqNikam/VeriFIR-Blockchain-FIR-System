@@ -1,12 +1,29 @@
 "use client"
 
+/**
+ * hooks/use-firs.ts
+ * ─────────────────────────────────────────────────────────────────────────────
+ * React hooks for fetching FIR data from the API.
+ *
+ * useFIRs(options)  — paginated list of FIRs (role-scoped by the server)
+ * useFIR(id)        — single FIR with integrity hash and chain verification
+ *
+ * SERVER-SIDE FILTERING:
+ *   The server automatically scopes results based on the session cookie:
+ *   - Citizens   → only their own FIRs
+ *   - Police     → only FIRs in their pincode jurisdiction
+ *   - Admins     → all FIRs
+ *   No client-side filtering by role is needed or trusted.
+ */
 import { useState, useEffect, useCallback } from "react"
 import type { FIR } from "@/lib/types"
 
-// ── useFIRs — fetch a list of FIRs with optional filters ─────────────────────
+// ── useFIRs ───────────────────────────────────────────────────────────────────
 
 interface UseFIRsOptions {
+  /** Filter by citizenId — ignored server-side for police/admin (session-scoped) */
   citizenId?: string
+  /** Optional status filter (e.g. "pending", "verified") */
   status?: string
 }
 
@@ -15,6 +32,7 @@ interface UseFIRsResult {
   total: number
   loading: boolean
   error: string | null
+  /** Manually re-fetch the list (e.g. after an SSE notification) */
   refetch: () => void
 }
 
@@ -23,7 +41,7 @@ export function useFIRs(options: UseFIRsOptions = {}): UseFIRsResult {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tick, setTick] = useState(0)
+  const [tick, setTick] = useState(0) // increment to trigger a refetch
 
   const { citizenId, status } = options
 
@@ -51,7 +69,7 @@ export function useFIRs(options: UseFIRsOptions = {}): UseFIRsResult {
   return { firs, total, loading, error, refetch }
 }
 
-// ── useFIR — fetch a single FIR by ID ────────────────────────────────────────
+// ── useFIR ────────────────────────────────────────────────────────────────────
 
 interface UseFIRResult {
   fir: FIR | null
@@ -60,6 +78,11 @@ interface UseFIRResult {
   notFound: boolean
 }
 
+/**
+ * Fetch a single FIR by its ID.
+ * The response includes computedHash, integrityVerified, chainData, and
+ * onChainStatusHistory for the blockchain trust panel.
+ */
 export function useFIR(id: string): UseFIRResult {
   const [fir, setFir] = useState<FIR | null>(null)
   const [loading, setLoading] = useState(true)

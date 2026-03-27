@@ -249,6 +249,7 @@ export default function VerifiedFIRDetailPage({ params }: { params: Promise<{ id
                 rejectionReason={fir.rejectionReason}
                 appealReason={fir.appealReason}
                 isAppeal={fir.isAppeal}
+                onChainStatusHistory={fir.onChainStatusHistory}
               />
             </CardContent>
           </Card>
@@ -338,6 +339,24 @@ export default function VerifiedFIRDetailPage({ params }: { params: Promise<{ id
                     <p className="text-xs text-muted-foreground mb-1">Data Hash (SHA-256)</p>
                     <code className="block rounded bg-secondary px-2 py-1 text-xs break-all">{fir.storedHash}</code>
                   </div>
+                  {/* On-chain verification record */}
+                  {fir.onChainVerification?.exists && (
+                    <div className="pt-2 border-t border-border">
+                      <p className="text-xs font-medium text-foreground mb-1.5">On-chain Verification Record</p>
+                      <div className="space-y-1">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Verified by wallet</p>
+                          <code className="text-xs font-mono text-foreground break-all">{fir.onChainVerification.verifiedBy}</code>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Block timestamp</p>
+                          <p className="text-xs text-foreground font-mono">
+                            {new Date(fir.onChainVerification.timestamp * 1000).toLocaleString("en-IN")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CollapsibleContent>
               </Collapsible>
             </CardContent>

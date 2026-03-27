@@ -1,13 +1,21 @@
 "use client"
 
-import { CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react"
+import { CheckCircle, Clock, XCircle, AlertCircle, Link2 } from "lucide-react"
 import type { FIRStatus } from "@/lib/types"
 import { useLanguage } from "@/lib/i18n/language-context"
+
+interface OnChainStatusEntry {
+  status: string
+  updatedBy: string
+  timestamp: number // unix seconds
+}
 
 interface TimelineStep {
   label: string
   description: string
   timestamp?: string
+  blockchainTimestamp?: string // authoritative on-chain timestamp
+  blockchainWallet?: string    // wallet address that signed the tx
   state: "complete" | "active" | "pending" | "rejected"
 }
 
@@ -19,6 +27,7 @@ interface FIRTimelineProps {
   rejectionReason?: string
   appealReason?: string
   isAppeal?: boolean
+  onChainStatusHistory?: OnChainStatusEntry[] | null
 }
 
 export function FIRTimeline({
@@ -29,10 +38,21 @@ export function FIRTimeline({
   rejectionReason,
   appealReason,
   isAppeal,
+  onChainStatusHistory,
 }: FIRTimelineProps) {
   const { t } = useLanguage()
   const fmt = (d?: string) =>
     d ? new Date(d).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : undefined
+  const fmtUnix = (ts?: number) =>
+    ts ? new Date(ts * 1000).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : undefined
+
+  // Build a lookup: status → on-chain entry (last match wins for re-entries)
+  const chainByStatus = new Map<string, OnChainStatusEntry>()
+  if (onChainStatusHistory) {
+    for (const entry of onChainStatusHistory) {
+      chainByStatus.set(entry.status, entry)
+    }
+  }
 
   const steps: TimelineStep[] = [
     {
@@ -41,12 +61,16 @@ export function FIRTimeline({
         ? `${t("timeline.appealPrefix")} ${appealReason}`
         : t("timeline.firSubmittedDesc"),
       timestamp: fmt(filedDate),
+      blockchainTimestamp: fmtUnix(chainByStatus.get("pending")?.timestamp),
+      blockchainWallet: chainByStatus.get("pending")?.updatedBy,
       state: "complete",
     },
     {
       label: t("timeline.underReview"),
       description: t("timeline.underReviewDesc"),
       timestamp: fmt(underVerificationAt),
+      blockchainTimestamp: fmtUnix(chainByStatus.get("under-verification")?.timestamp),
+      blockchainWallet: chainByStatus.get("under-verification")?.updatedBy,
       state:
         status === "pending"
           ? "pending"
@@ -59,12 +83,21 @@ export function FIRTimeline({
           label: t("timeline.rejected"),
           description: rejectionReason || t("timeline.rejectedDefault"),
           timestamp: fmt(verifiedAt),
+          blockchainTimestamp: fmtUnix(
+            // "rejected:xxx" entries from reason fingerprint
+            [...chainByStatus.entries()]
+              .find(([k]) => k.startsWith("rejected"))?.[1]?.timestamp
+          ),
+          blockchainWallet: [...chainByStatus.entries()]
+            .find(([k]) => k.startsWith("rejected"))?.[1]?.updatedBy,
           state: "rejected",
         }
       : {
           label: t("timeline.verified"),
           description: t("timeline.verifiedDesc"),
           timestamp: fmt(verifiedAt),
+          blockchainTimestamp: fmtUnix(chainByStatus.get("verified")?.timestamp),
+          blockchainWallet: chainByStatus.get("verified")?.updatedBy,
           state: status === "verified" ? "complete" : "pending",
         },
   ]
@@ -101,6 +134,18 @@ export function FIRTimeline({
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{step.description}</p>
             {step.timestamp && (
               <p className="text-xs text-muted-foreground mt-1 font-mono">{step.timestamp}</p>
+            )}
+            {/* On-chain timestamp — authoritative blockchain record */}
+            {step.blockchainTimestamp && (
+              <div className="flex items-center gap-1 mt-1.5">
+                <Link2 className="h-3 w-3 text-primary flex-shrink-0" />
+                <p className="text-xs text-primary font-mono">{step.blockchainTimestamp}</p>
+                {step.blockchainWallet && (
+                  <p className="text-xs text-muted-foreground font-mono truncate ml-1">
+                    {step.blockchainWallet.slice(0, 10)}…
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

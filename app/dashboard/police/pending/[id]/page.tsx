@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge"
 import { FIRTimeline } from "@/components/dashboard/fir-timeline"
 import { useFIR } from "@/hooks/use-firs"
 import { useAuth } from "@/lib/auth-context"
-import { ArrowLeft, Copy, FileText, MapPin, Calendar, User, Hash, CheckCircle, Shield, Loader2, AlertTriangle, XCircle, MessageSquare, Send, Upload } from "lucide-react"
+import { ArrowLeft, Copy, ExternalLink, Download, FileText, MapPin, Calendar, User, Hash, CheckCircle, Shield, Loader2, AlertTriangle, XCircle, MessageSquare, Send, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type { FIRNote } from "@/lib/types"
 import {
@@ -94,6 +94,35 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
       .then((data) => { if (data.notes) setNotes(data.notes) })
       .catch(() => {/* silent */})
   }, [fir?.id])
+
+  const IPFS_GATEWAYS = [
+    "https://gateway.pinata.cloud/ipfs",
+    "https://cloudflare-ipfs.com/ipfs",
+    "https://ipfs.io/ipfs",
+    "https://dweb.link/ipfs",
+  ]
+
+  const downloadEvidenceFile = async (cid: string, fileName: string) => {
+    for (const gateway of IPFS_GATEWAYS) {
+      try {
+        const res = await fetch(`${gateway}/${cid}`)
+        if (!res.ok) continue
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = fileName
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        URL.revokeObjectURL(url)
+        return
+      } catch {
+        // Try next gateway
+      }
+    }
+    toast({ title: "Download Failed", description: "Could not reach any IPFS gateway.", variant: "destructive" })
+  }
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
@@ -224,10 +253,78 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Narrative — show full firstInformationContents if filed with new form, else description */}
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">{t("police.review.description")}</h4>
-                <p className="text-foreground">{fir.description}</p>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                  {(fir as unknown as { firstInformationContents?: string }).firstInformationContents
+                    ? "First Information Contents (Faryad)"
+                    : t("police.review.description")}
+                </h4>
+                <p className="text-foreground whitespace-pre-line">
+                  {(fir as unknown as { firstInformationContents?: string }).firstInformationContents || fir.description}
+                </p>
               </div>
+
+              {/* Acts & Sections */}
+              {(fir as unknown as { acts?: { act: string; sections: string }[] }).acts?.length ? (
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Acts &amp; Sections</h4>
+                  <div className="rounded-lg border border-border overflow-hidden text-sm">
+                    <table className="w-full">
+                      <thead className="bg-muted text-muted-foreground">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-xs w-10">S.No.</th>
+                          <th className="px-3 py-2 text-left font-medium text-xs">Act</th>
+                          <th className="px-3 py-2 text-left font-medium text-xs">Sections</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(fir as unknown as { acts: { act: string; sections: string }[] }).acts.map((a, i) => (
+                          <tr key={i} className="border-t border-border">
+                            <td className="px-3 py-2 text-muted-foreground text-xs">{i + 1}</td>
+                            <td className="px-3 py-2 text-xs">{a.act}</td>
+                            <td className="px-3 py-2 text-xs font-mono">{a.sections}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Accused details */}
+              {(fir as unknown as { accusedDetails?: { name: string; alias?: string; relativeName?: string; address?: string }[] }).accusedDetails?.length ? (
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Accused / Suspected Persons</h4>
+                  <div className="space-y-2">
+                    {(fir as unknown as { accusedDetails: { name: string; alias?: string; relativeName?: string; address?: string }[] }).accusedDetails.map((a, i) => (
+                      <div key={i} className="rounded-lg border border-border px-3 py-2 text-sm">
+                        <p className="font-medium">{a.name}{a.alias ? ` (${a.alias})` : ""}</p>
+                        {a.relativeName && <p className="text-xs text-muted-foreground">Relative: {a.relativeName}</p>}
+                        {a.address && <p className="text-xs text-muted-foreground">{a.address}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Complainant personal details */}
+              {(fir as unknown as { complainantDetails?: { mobile?: string; occupation?: string; currentAddress?: string; uid?: string } }).complainantDetails?.mobile ? (
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Complainant Details</h4>
+                  <div className="grid gap-2 sm:grid-cols-2 text-sm">
+                    {(fir as unknown as { complainantDetails: { mobile?: string; occupation?: string; currentAddress?: string; uid?: string } }).complainantDetails.mobile && (
+                      <div><span className="text-muted-foreground">Mobile: </span>{(fir as unknown as { complainantDetails: { mobile?: string } }).complainantDetails!.mobile}</div>
+                    )}
+                    {(fir as unknown as { complainantDetails: { occupation?: string } }).complainantDetails?.occupation && (
+                      <div><span className="text-muted-foreground">Occupation: </span>{(fir as unknown as { complainantDetails: { occupation?: string } }).complainantDetails!.occupation}</div>
+                    )}
+                    {(fir as unknown as { complainantDetails: { currentAddress?: string } }).complainantDetails?.currentAddress && (
+                      <div className="sm:col-span-2"><span className="text-muted-foreground">Address: </span>{(fir as unknown as { complainantDetails: { currentAddress?: string } }).complainantDetails!.currentAddress}</div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
 
               {fir.status === "rejected" && fir.rejectionReason && (
                 <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
@@ -304,15 +401,21 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
                           <div>
                             <p className="text-sm font-medium text-foreground">{file.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {t("fir.typeLabel")} {file.type} | {t("fir.ipfsLabel")} {file.ipfsCid.slice(0, 15)}...
+                              {t("fir.typeLabel")} {file.type} | IPFS: {file.ipfsCid.slice(0, 15)}…
                             </p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={`https://ipfs.io/ipfs/${file.ipfsCid}`} target="_blank" rel="noopener noreferrer">
-                            {t("fir.preview")}
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Download" onClick={() => downloadEvidenceFile(file.ipfsCid, file.name)}>
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Copy CID" onClick={() => copyToClipboard(file.ipfsCid, "IPFS CID")}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <a href={`https://gateway.pinata.cloud/ipfs/${file.ipfsCid}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-primary rounded-md hover:bg-accent">
+                            <ExternalLink className="h-4 w-4" />
                           </a>
-                        </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -335,11 +438,17 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
                             </p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={`https://ipfs.io/ipfs/${file.ipfsCid}`} target="_blank" rel="noopener noreferrer">
-                            {t("fir.preview")}
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Download" onClick={() => downloadEvidenceFile(file.ipfsCid, file.name)}>
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Copy CID" onClick={() => copyToClipboard(file.ipfsCid, "IPFS CID")}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <a href={`https://gateway.pinata.cloud/ipfs/${file.ipfsCid}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground hover:text-primary rounded-md hover:bg-accent">
+                            <ExternalLink className="h-4 w-4" />
                           </a>
-                        </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -500,6 +609,7 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
                 rejectionReason={fir.rejectionReason}
                 appealReason={fir.appealReason}
                 isAppeal={fir.isAppeal}
+                onChainStatusHistory={fir.onChainStatusHistory}
               />
             </CardContent>
           </Card>

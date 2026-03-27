@@ -23,7 +23,15 @@ export default function PoliceLayout({ children }: { children: React.ReactNode }
     }
   }, [isLoading, isAuthenticated, user, router])
 
-  if (isLoading || !isAuthenticated || user?.role !== "police") return null
+  // Show a neutral loading screen while AuthProvider hydrates from cookie/sessionStorage.
+  // Returning null here was causing a blank black page when the server cookie was valid
+  // but sessionStorage was empty (e.g. after closing and reopening the tab).
+  if (isLoading) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  )
+  if (!isAuthenticated || user?.role !== "police") return null
 
   const navItems: NavItem[] = [
     { label: t("sidebar.policeNav.dashboard"), href: "/dashboard/police", icon: LayoutDashboard },

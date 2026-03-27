@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardSidebar, type NavItem } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { LayoutDashboard, FileText, Link as LinkIcon, BarChart3 } from "lucide-react"
+import { LayoutDashboard, FileText, Link as LinkIcon, BarChart3, Users } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { useAuth } from "@/lib/auth-context"
 
@@ -23,11 +23,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isLoading, isAuthenticated, user, router])
 
-  if (isLoading || !isAuthenticated || user?.role !== "admin") return null
+  if (isLoading) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  )
+  if (!isAuthenticated || user?.role !== "admin") return null
 
   const navItems: NavItem[] = [
     { label: t("sidebar.adminNav.dashboard"), href: "/dashboard/admin", icon: LayoutDashboard },
     { label: t("sidebar.adminNav.allFirs"), href: "/dashboard/admin/all-firs", icon: FileText },
+    { label: "User Management", href: "/dashboard/admin/users", icon: Users },
     { label: t("sidebar.adminNav.blockchainLogs"), href: "/dashboard/admin/logs", icon: LinkIcon },
     { label: t("sidebar.adminNav.reports"), href: "/dashboard/admin/reports", icon: BarChart3 },
   ]

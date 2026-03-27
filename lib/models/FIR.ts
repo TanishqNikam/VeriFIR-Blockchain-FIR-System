@@ -4,6 +4,86 @@
  */
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+// ── Sub-document: act & section entry (from real FIR form section 2) ──────────
+export interface IActSection {
+  act: string;      // Name of the act (e.g., "Indian Penal Code, 1860")
+  sections: string; // Applicable sections (e.g., "420, 467, 468")
+}
+
+const ActSectionSchema = new Schema<IActSection>(
+  {
+    act: { type: String, required: true },
+    sections: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+// ── Sub-document: accused person ──────────────────────────────────────────────
+export interface IAccused {
+  name: string;
+  alias?: string;
+  relativeName?: string; // Father's/relative's name
+  address?: string;
+}
+
+const AccusedSchema = new Schema<IAccused>(
+  {
+    name: { type: String, required: true },
+    alias: { type: String },
+    relativeName: { type: String },
+    address: { type: String },
+  },
+  { _id: false }
+);
+
+// ── Sub-document: property involved in the offence ────────────────────────────
+export interface IPropertyDetail {
+  category: string;    // e.g., "Movable", "Immovable"
+  type: string;        // e.g., "Cash", "Jewellery", "Vehicle"
+  description: string;
+  value: number;       // In Indian Rupees
+}
+
+const PropertyDetailSchema = new Schema<IPropertyDetail>(
+  {
+    category: { type: String },
+    type: { type: String },
+    description: { type: String },
+    value: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
+// ── Sub-document: complainant personal details (FIR form section 6) ───────────
+export interface IComplainantDetails {
+  fathersName?: string;
+  dob?: string;
+  nationality?: string;
+  occupation?: string;
+  mobile?: string;
+  currentAddress?: string;
+  permanentAddress?: string;
+  idProofType?: string;   // e.g., "Aadhaar", "Voter ID", "PAN"
+  idProofNumber?: string;
+  uid?: string;           // Aadhaar number
+}
+
+const ComplainantDetailsSchema = new Schema<IComplainantDetails>(
+  {
+    fathersName: { type: String },
+    dob: { type: String },
+    nationality: { type: String, default: "Indian" },
+    occupation: { type: String },
+    mobile: { type: String },
+    currentAddress: { type: String },
+    permanentAddress: { type: String },
+    idProofType: { type: String },
+    idProofNumber: { type: String },
+    uid: { type: String },
+  },
+  { _id: false }
+);
+
 // ── Sub-document: police note ─────────────────────────────────────────────────
 export interface INote {
   text: string;
@@ -90,9 +170,44 @@ export interface IFIR extends Document {
   location: string;
   incidentDate: string;
   filedDate: Date;
+
+  // ── Extended NCRB I.I.F.-I fields (added to match real FIR structure) ───────
+  /** District name (e.g., "Ahmedabad") */
+  district?: string;
+  /** Police Station / Thana name */
+  policeStation?: string;
+  /** Applicable Acts and their sections (FIR form section 2) */
+  acts?: IActSection[];
+  /** End date of the incident (for multi-day offences) */
+  incidentDateTo?: string;
+  /** Start time of the incident (HH:MM 24hr) */
+  incidentTimeFrom?: string;
+  /** End time of the incident (HH:MM 24hr) */
+  incidentTimeTo?: string;
+  /** How the information was received by police station */
+  typeOfInformation?: "written" | "oral";
+  /** Full address of the place of occurrence */
+  placeAddress?: string;
+  /** Direction and distance from the nearest police station */
+  distanceFromPS?: string;
+  /** Beat number assigned to the occurrence area */
+  beatNo?: string;
+  /** Personal details of the complainant (FIR form section 6) */
+  complainantDetails?: IComplainantDetails;
+  /** Details of known / suspected accused persons (FIR form section 7) */
+  accusedDetails?: IAccused[];
+  /** Reason for delay in lodging the FIR (FIR form section 8) */
+  delayReason?: string;
+  /** Particulars of property involved in the offence (FIR form section 9) */
+  propertyDetails?: IPropertyDetail[];
+  /** Total estimated value of all involved property in INR */
+  totalPropertyValue?: number;
+  /** Verbatim narrative of the complaint (FIR form section 12) */
+  firstInformationContents?: string;
   status: "pending" | "under-verification" | "verified" | "rejected";
   citizenId: string;
   citizenName: string;
+  pincode?: string;
   policeVerifierId?: string;
   policeVerifierName?: string;
   /** Wallet address of the police officer who verified */
@@ -154,6 +269,26 @@ const FIRSchema = new Schema<IFIR>(
     },
     citizenId: { type: String, required: true },
     citizenName: { type: String, required: true },
+    /** Area pincode at time of filing — determines which police officer sees this FIR */
+    pincode: { type: String, index: true },
+
+    // Extended NCRB I.I.F.-I fields
+    district: { type: String },
+    policeStation: { type: String },
+    acts: { type: [ActSectionSchema], default: undefined },
+    incidentDateTo: { type: String },
+    incidentTimeFrom: { type: String },
+    incidentTimeTo: { type: String },
+    typeOfInformation: { type: String, enum: ["written", "oral"] },
+    placeAddress: { type: String },
+    distanceFromPS: { type: String },
+    beatNo: { type: String },
+    complainantDetails: { type: ComplainantDetailsSchema },
+    accusedDetails: { type: [AccusedSchema], default: undefined },
+    delayReason: { type: String },
+    propertyDetails: { type: [PropertyDetailSchema], default: undefined },
+    totalPropertyValue: { type: Number },
+    firstInformationContents: { type: String, maxlength: 10000 },
     policeVerifierId: { type: String },
     policeVerifierName: { type: String },
     policeVerifierWallet: { type: String },

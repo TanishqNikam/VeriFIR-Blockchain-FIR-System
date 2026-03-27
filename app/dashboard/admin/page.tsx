@@ -1,18 +1,41 @@
 "use client"
 
 import Link from "next/link"
-import { FileText, CheckCircle, TrendingUp, Clock, ArrowRight } from "lucide-react"
+import { useState, useEffect } from "react"
+import { FileText, CheckCircle, TrendingUp, Clock, ArrowRight, Blocks } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { StatusBadge } from "@/components/dashboard/status-badge"
 import { useFIRs } from "@/hooks/use-firs"
-import { mockBlockchainLogs } from "@/lib/mock-data"
 import { useLanguage } from "@/lib/i18n/language-context"
+
+interface BlockchainEvent {
+  event: "FIRCreated" | "FIRVerified" | "StatusUpdated"
+  firId: string
+  txHash: string
+  blockNumber: number
+  timestamp?: number
+  walletAddress: string
+  extra?: Record<string, string>
+}
 
 export default function AdminDashboardPage() {
   const { firs, loading } = useFIRs()
   const { t } = useLanguage()
+
+  const [onChainCount, setOnChainCount] = useState<number | null>(null)
+  const [recentLogs, setRecentLogs] = useState<BlockchainEvent[]>([])
+
+  useEffect(() => {
+    fetch("/api/blockchain-stats?limit=5")
+      .then((r) => r.json())
+      .then((data) => {
+        setOnChainCount(data.firCount ?? null)
+        setRecentLogs(data.recentEvents ?? [])
+      })
+      .catch(() => {})
+  }, [])
 
   const totalFIRs = firs.length
   const verifiedFIRs = firs.filter((f) => f.status === "verified").length
@@ -20,7 +43,6 @@ export default function AdminDashboardPage() {
   const verificationRate = totalFIRs > 0 ? Math.round((verifiedFIRs / totalFIRs) * 100) : 0
 
   const recentFIRs = firs.slice(0, 5)
-  const recentLogs = mockBlockchainLogs.slice(0, 5)
 
   return (
     <div className="space-y-6">
@@ -35,6 +57,19 @@ export default function AdminDashboardPage() {
         <StatsCard title={t("admin.dashboard.statsPending")} value={loading ? "..." : pendingFIRs} icon={Clock} description={t("admin.dashboard.statsPendingDesc")} />
         <StatsCard title={t("admin.dashboard.statsRate")} value={loading ? "..." : `${verificationRate}%`} icon={TrendingUp} description={t("admin.dashboard.statsRateDesc")} />
       </div>
+
+      {/* On-chain registry count */}
+      {onChainCount !== null && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+          <Blocks className="h-5 w-5 text-primary flex-shrink-0" />
+          <div className="text-sm">
+            <span className="font-semibold text-foreground">{onChainCount}</span>
+            <span className="text-muted-foreground ml-1">
+              FIR{onChainCount !== 1 ? "s" : ""} anchored on the FIRRegistry smart contract
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -84,21 +119,35 @@ export default function AdminDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentLogs.map((log) => (
-                <div key={log.id} className="flex items-start gap-3 py-2 border-b border-border last:border-0">
-                  <div className={`mt-0.5 h-2 w-2 rounded-full flex-shrink-0 ${log.event === "FIRCreated" ? "bg-primary" : log.event === "FIRVerified" ? "bg-success" : "bg-warning"}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-foreground">{log.event}</span>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">{new Date(log.timestamp).toLocaleTimeString("en-IN")}</span>
+            {recentLogs.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No on-chain events yet. Start the Hardhat node to see live data.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {recentLogs.map((log, i) => (
+                  <div key={`${log.txHash}-${i}`} className="flex items-start gap-3 py-2 border-b border-border last:border-0">
+                    <div className={`mt-0.5 h-2 w-2 rounded-full flex-shrink-0 ${log.event === "FIRCreated" ? "bg-primary" : log.event === "FIRVerified" ? "bg-success" : "bg-amber-500"}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {log.event === "StatusUpdated" && log.extra?.status
+                            ? `Status → ${log.extra.status}`
+                            : log.event}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          {log.timestamp
+                            ? new Date(log.timestamp * 1000).toLocaleTimeString("en-IN")
+                            : `Block #${log.blockNumber}`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{log.firId}</p>
+                      <p className="text-xs text-muted-foreground truncate font-mono">{log.txHash.slice(0, 24)}...</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{log.firId}</p>
-                    <p className="text-xs text-muted-foreground truncate font-mono">{log.txHash.slice(0, 24)}...</p>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -1,16 +1,40 @@
 /**
  * app/api/fir/[id]/route.ts
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GET   /api/fir/:id — Fetch a FIR with full integrity verification:
+ *   1. Recompute SHA-256 from stored fields → compare with storedHash
+ *   2. Cross-check storedHash against the on-chain dataHash
+ *   3. Return both checks so the UI can show a trust badge
  *
- * GET /api/fir/:id — Fetch a specific FIR, recompute its hash,
- *                    and cross-check against the on-chain record.
- * PATCH /api/fir/:id — Update FIR status (verify / reject / under-verification)
+ * PATCH /api/fir/:id — Change FIR status (police/admin only):
+ *   { action: "under-verification" }  — officer opened the FIR
+ *   { action: "verify", ... }         — officer endorses on blockchain
+ *   { action: "reject", ..., rejectionReason } — officer rejects with reason
+ *
+ * INTEGRITY MIGRATION:
+ *   FIRs filed before `originalEvidenceRefs` was introduced have their
+ *   original evidence set recovered by trying every prefix of evidenceFiles
+ *   until one produces the stored SHA-256 hash. The match is persisted to
+ *   MongoDB so the migration only runs once per FIR.
  */
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { requireSession, isAuthError } from "@/lib/api-auth";
+
+/** Hash a reason string and take the first 16 hex chars — short enough to fit in a status string */
+function reasonFingerprint(reason: string): string {
+  return crypto.createHash("sha256").update(reason).digest("hex").slice(0, 16);
+}
 import { connectDB } from "@/lib/db";
 import FIRModel from "@/lib/models/FIR";
 import UserModel from "@/lib/models/User";
-import { getFIRFromChain, verifyFIROnChain, updateFIRStatusOnChain } from "@/lib/blockchain";
+import {
+  getFIRFromChain,
+  verifyFIROnChain,
+  updateFIRStatusOnChain,
+  getOnChainStatusHistory,
+  getVerificationFromChain,
+} from "@/lib/blockchain";
 import { createNotification } from "@/lib/notifications";
 import { sendEmail, firStatusEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
@@ -36,12 +60,16 @@ export async function GET(
     // Migration for FIRs filed before originalEvidenceRefs existed:
     // Try each prefix of evidenceFiles (oldest-first) until one produces
     // the storedHash. Save the match so the migration only runs once.
-    let evidenceRefsForHash: { name: string; cid: string }[];
+    let evidenceRefsForHash: { name: string; cid: string }[] = [];
 
     if (fir.originalEvidenceRefs && fir.originalEvidenceRefs.length > 0) {
       evidenceRefsForHash = fir.originalEvidenceRefs.map((r) => ({ name: r.name, cid: r.cid }));
     } else {
-      // Auto-detect the original evidence set by trying prefixes
+      // ── One-time migration for legacy FIRs ────────────────────────────────
+      // FIRs filed before originalEvidenceRefs was added don't have a frozen
+      // snapshot. We recover the original set by trying every prefix of
+      // evidenceFiles (0 files, 1 file, 2 files, …) and checking which one
+      // reproduces storedHash. This works because files are ordered oldest-first.
       const allFiles = fir.evidenceFiles ?? [];
       let found = false;
       for (let i = 0; i <= allFiles.length; i++) {
@@ -56,14 +84,14 @@ export async function GET(
           .digest("hex");
         if (testHash === fir.storedHash) {
           evidenceRefsForHash = subset;
-          // Persist so this migration only runs once
+          // Persist the discovered set so this migration only runs once
           await FIRModel.updateOne({ firId: fir.firId }, { $set: { originalEvidenceRefs: subset } });
           found = true;
           break;
         }
       }
       if (!found) {
-        // No prefix matched — use all current files as best effort
+        // No prefix matched (rare edge case) — fall back to all current files
         evidenceRefsForHash = allFiles.map((f) => ({ name: f.name, cid: f.ipfsCid }));
       }
     }
@@ -85,17 +113,21 @@ export async function GET(
 
     const integrityVerified = computedHash === fir.storedHash;
 
-    // ── Verify against blockchain (non-blocking) ─────────────────────────────
-    // null  = blockchain node unreachable (don't show pass/fail to user)
-    // true  = FIR found on-chain and hash matches
-    // false = FIR found on-chain but hash does NOT match (genuine tampering signal)
+    // ── Verify against blockchain + read on-chain records (non-blocking) ────────
+    // chainVerified: null = node unreachable, true = hash matches, false = tampering
     let chainData = null;
     let chainVerified: boolean | null = null;
+    let onChainStatusHistory = null;
+    let onChainVerification = null;
     try {
-      chainData = await getFIRFromChain(fir.firId);
+      [chainData, onChainStatusHistory, onChainVerification] = await Promise.all([
+        getFIRFromChain(fir.firId),
+        getOnChainStatusHistory(fir.firId),
+        getVerificationFromChain(fir.firId),
+      ]);
       chainVerified = chainData.dataHash === fir.storedHash;
     } catch {
-      // Chain unavailable — leave chainVerified as null
+      // Chain unavailable — leave all chain fields as null
     }
 
     return NextResponse.json({
@@ -110,6 +142,8 @@ export async function GET(
       integrityVerified,
       chainData,
       chainVerified,
+      onChainStatusHistory,
+      onChainVerification,
     });
   } catch (err) {
     console.error(`[GET /api/fir/${id}] error:`, err);
@@ -128,6 +162,10 @@ export async function PATCH(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  // Only police and admin can change FIR status
+  const auth = await requireSession(["police", "admin"]);
+  if (isAuthError(auth)) return auth;
+
   const { id } = await context.params;
   try {
     await connectDB();
@@ -171,8 +209,8 @@ export async function PATCH(
       // Real-time push to connected clients
       emitFIRUpdate({ firId: id, status: "under-verification", citizenId: fir.citizenId, title: fir.title });
 
-      // On-chain status update (non-blocking)
-      updateFIRStatusOnChain(id, "under-verification").catch(() => {});
+      // On-chain status update — use police signer (non-blocking)
+      updateFIRStatusOnChain(id, "under-verification", "police").catch(() => {});
 
       // Notify citizen
       await createNotification({
@@ -228,8 +266,13 @@ export async function PATCH(
       // Real-time push to connected clients
       emitFIRUpdate({ firId: id, status: "rejected", citizenId: fir.citizenId, title: fir.title, updatedBy: policeVerifierName });
 
-      // On-chain status update (non-blocking)
-      updateFIRStatusOnChain(id, "rejected").catch(() => {});
+      // On-chain status update — encode rejection reason fingerprint (non-blocking)
+      // Format: "rejected:{sha256(reason).slice(0,16)}" — auditors can verify reason hash
+      updateFIRStatusOnChain(
+        id,
+        `rejected:${reasonFingerprint(rejectionReason)}`,
+        "police"
+      ).catch(() => {});
 
       // Notify citizen
       await createNotification({
@@ -266,7 +309,8 @@ export async function PATCH(
     let verificationTxHash: string | undefined;
     let verificationBlockNumber: number | undefined;
     try {
-      const chainResult = await verifyFIROnChain(id);
+      // Use police signer so verifiedBy on-chain = officer's wallet address
+      const chainResult = await verifyFIROnChain(id, "police");
       verificationTxHash = chainResult.txHash;
       verificationBlockNumber = chainResult.blockNumber;
     } catch (chainErr) {

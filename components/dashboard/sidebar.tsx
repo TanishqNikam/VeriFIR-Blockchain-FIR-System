@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 import { Shield, LogOut, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
-import { useRouter } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/language-context"
 
@@ -25,13 +24,16 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ navItems, roleLabel, mobileOpen, onMobileClose }: DashboardSidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const { user, logout } = useAuth()
   const { t } = useLanguage()
 
-  const handleLogout = () => {
-    logout()
-    router.push("/")
+  const handleLogout = async () => {
+    // Await so the HTTP-only session cookie is cleared on the server BEFORE navigating.
+    // Using window.location.href (full-page navigation) ensures the browser sends a
+    // fresh request with no cached cookie — prevents middleware from bouncing the user
+    // back to the dashboard and causing a blank page.
+    await logout()
+    window.location.href = "/"
   }
 
   return (

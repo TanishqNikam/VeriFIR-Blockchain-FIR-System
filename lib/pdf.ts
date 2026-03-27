@@ -35,6 +35,21 @@ export async function downloadFIRPdf(fir: FIR): Promise<void> {
 
   y = 32
 
+  // ── NCRB Form Header ─────────────────────────────────────────────────────
+  doc.setTextColor(15, 23, 42)
+  doc.setFontSize(9)
+  doc.setFont("helvetica", "bold")
+  doc.text("N.C.R.B. I.I.F.-I", pageW / 2, y, { align: "center" })
+  y += 5
+  doc.setFontSize(14)
+  doc.text("FIRST INFORMATION REPORT", pageW / 2, y, { align: "center" })
+  y += 4
+  doc.setFontSize(8)
+  doc.setFont("helvetica", "normal")
+  doc.setTextColor(100, 116, 139)
+  doc.text("(Under Section 173 B.N.S.S.)", pageW / 2, y, { align: "center" })
+  y += 8
+
   // ── FIR ID + Status ───────────────────────────────────────────────────────
   doc.setTextColor(15, 23, 42)
   doc.setFontSize(16)
@@ -74,33 +89,123 @@ export async function downloadFIRPdf(fir: FIR): Promise<void> {
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 48, textColor: [100, 116, 139] }, 1: { textColor: [15, 23, 42] } },
     body: [
       ["FIR ID", fir.id],
-      ["Title", fir.title],
-      ["Incident Date", new Date(fir.incidentDate).toLocaleDateString("en-IN")],
+      ...(fir.district ? [["District", fir.district]] : []),
+      ...(fir.policeStation ? [["Police Station", fir.policeStation]] : []),
+      ["Offence", fir.title],
+      ["Incident Date", new Date(fir.incidentDate).toLocaleDateString("en-IN") + (fir.incidentDateTo ? ` to ${new Date(fir.incidentDateTo).toLocaleDateString("en-IN")}` : "")],
+      ...(fir.incidentTimeFrom ? [["Time of Occurrence", `${fir.incidentTimeFrom}${fir.incidentTimeTo ? ` – ${fir.incidentTimeTo}` : ""}`]] : []),
       ["Filed Date", new Date(fir.filedDate).toLocaleDateString("en-IN")],
-      ["Location", fir.location],
+      ["Location (Area)", fir.location],
+      ...(fir.placeAddress ? [["Full Address", fir.placeAddress]] : []),
+      ...(fir.typeOfInformation ? [["Type of Information", fir.typeOfInformation.charAt(0).toUpperCase() + fir.typeOfInformation.slice(1)]] : []),
       ["Filed By", `${fir.citizenName} (ID: ${fir.citizenId})`],
+      ...(fir.complainantDetails?.mobile ? [["Complainant Mobile", fir.complainantDetails.mobile]] : []),
+      ...(fir.complainantDetails?.occupation ? [["Complainant Occupation", fir.complainantDetails.occupation]] : []),
       ...(fir.policeVerifierName ? [["Police Officer", fir.policeVerifierName]] : []),
       ...(fir.verifiedAt ? [["Verified On", new Date(fir.verifiedAt).toLocaleDateString("en-IN")]] : []),
       ...(fir.rejectionReason ? [["Rejection Reason", fir.rejectionReason]] : []),
+      ...(fir.totalPropertyValue ? [["Total Property Value", `₹ ${fir.totalPropertyValue.toLocaleString("en-IN")}`]] : []),
     ],
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + 8
 
-  // ── Description ──────────────────────────────────────────────────────────
+  // ── Acts & Sections ────────────────────────────────────────────────────────
+  if (fir.acts && fir.acts.length > 0) {
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.setTextColor(100, 116, 139)
+    doc.text("ACTS & SECTIONS", margin, y)
+    y += 2
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      theme: "striped",
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 8 },
+      styles: { fontSize: 8 },
+      head: [["S.No.", "Act / Adhiniyam", "Sections (Kalam)"]],
+      body: fir.acts.map((a, i) => [String(i + 1), a.act, a.sections]),
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 8
+  }
+
+  // ── Accused Details ────────────────────────────────────────────────────────
+  if (fir.accusedDetails && fir.accusedDetails.length > 0) {
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.setTextColor(100, 116, 139)
+    doc.text("ACCUSED / SUSPECTED PERSONS", margin, y)
+    y += 2
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      theme: "striped",
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 8 },
+      styles: { fontSize: 8 },
+      head: [["S.No.", "Name", "Alias", "Relative's Name", "Address"]],
+      body: fir.accusedDetails.map((a, i) => [
+        String(i + 1), a.name, a.alias || "—", a.relativeName || "—", a.address || "—",
+      ]),
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 8
+  }
+
+  // ── First Information Contents (Narrative) ─────────────────────────────────
+  const narrative = fir.firstInformationContents || fir.description
   doc.setFontSize(10)
   doc.setFont("helvetica", "bold")
   doc.setTextColor(100, 116, 139)
-  doc.text("DESCRIPTION", margin, y)
+  doc.text("FIRST INFORMATION CONTENTS (FARYAD)", margin, y)
   y += 5
 
   doc.setFont("helvetica", "normal")
   doc.setTextColor(15, 23, 42)
   doc.setFontSize(9)
-  const descLines = doc.splitTextToSize(fir.description, pageW - margin * 2)
+  const descLines = doc.splitTextToSize(narrative, pageW - margin * 2)
   doc.text(descLines, margin, y)
   y += descLines.length * 5 + 8
+
+  // ── Delay Reason ─────────────────────────────────────────────────────────
+  if (fir.delayReason) {
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.setTextColor(100, 116, 139)
+    doc.text("REASON FOR DELAY IN REPORTING", margin, y)
+    y += 5
+    doc.setFont("helvetica", "normal")
+    doc.setTextColor(15, 23, 42)
+    doc.setFontSize(9)
+    const delayLines = doc.splitTextToSize(fir.delayReason, pageW - margin * 2)
+    doc.text(delayLines, margin, y)
+    y += delayLines.length * 5 + 8
+  }
+
+  // ── Property Details ────────────────────────────────────────────────────────
+  if (fir.propertyDetails && fir.propertyDetails.length > 0) {
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.setTextColor(100, 116, 139)
+    doc.text("PARTICULARS OF PROPERTY", margin, y)
+    y += 2
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      theme: "striped",
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 8 },
+      styles: { fontSize: 8 },
+      head: [["S.No.", "Category", "Type", "Description", "Value (₹)"]],
+      body: fir.propertyDetails.map((p, i) => [
+        String(i + 1), p.category, p.type, p.description, p.value.toLocaleString("en-IN"),
+      ]),
+      foot: fir.totalPropertyValue ? [["", "", "", "Total", `₹ ${fir.totalPropertyValue.toLocaleString("en-IN")}`]] : undefined,
+      footStyles: { fontStyle: "bold", fillColor: [241, 245, 249] },
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 8
+  }
 
   // ── Evidence files ────────────────────────────────────────────────────────
   if (fir.evidenceFiles.length > 0) {
