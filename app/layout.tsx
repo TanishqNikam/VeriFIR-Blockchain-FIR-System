@@ -10,25 +10,17 @@ import './globals.css'
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Blockchain FIR System | Tamper-Proof Evidence Management',
-  description: 'Blockchain-Based FIR and Evidence Integrity Management System for secure, transparent, and tamper-proof police record management in India.',
-  generator: 'v0.app',
+  title: 'VeriFIR | Blockchain FIR Management System',
+  description: 'A tamper-proof, blockchain-integrated First Information Report management system for Indian law enforcement. Every FIR is SHA-256 hashed, stored on IPFS, and anchored on Ethereum.',
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
       {
         url: '/icon.svg',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
   },
 }
 

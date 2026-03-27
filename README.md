@@ -1,6 +1,11 @@
 <div align="center">
 
-<img src="public/icon.svg" alt="VeriFIR Logo" width="72" height="72" />
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/icon.svg">
+  <img src="public/icon.svg" alt="VeriFIR — Verified Shield" width="80" height="80" />
+</picture>
+
 
 # VeriFIR
 
