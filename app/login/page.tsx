@@ -195,13 +195,7 @@ export default function LoginPage() {
                 <Link href="/register" className="text-primary hover:underline">{t("auth.createOne")}</Link>
               </p>
 
-              <div className="rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground">{t("auth.demoCredentials")}:</p>
-                <p>Citizen — citizen@verifir.in / citizen123</p>
-                <p>Police (PIN 411007) — police@verifir.in / police123</p>
-                <p>Police (PIN 400051) — police2@verifir.in / police123</p>
-                <p>Admin — admin@verifir.in / admin123</p>
-              </div>
+
             </form>
           </CardContent>
         </Card>
