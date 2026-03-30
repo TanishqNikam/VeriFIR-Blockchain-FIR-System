@@ -7,8 +7,60 @@ pragma solidity ^0.8.19;
  *         Stores FIR ID, IPFS CID, SHA-256 data hash, timestamp, and registrant.
  *         Once registered, a FIR record cannot be modified or deleted.
  *         Police officers can record on-chain verifications and status updates.
+ *
+ * @dev Access control:
+ *      - Only the contract owner (deployer) can authorize or revoke callers.
+ *      - Only authorized callers can register FIRs, verify FIRs, or update statuses.
+ *      - The deployer is automatically authorized on deployment.
  */
 contract FIRRegistry {
+    // ─── Access control ──────────────────────────────────────────────────────
+
+    address public owner;
+
+    /// @notice Addresses allowed to write to the registry (citizen/police server wallets)
+    mapping(address => bool) public authorizedCallers;
+
+    event CallerAuthorized(address indexed caller);
+    event CallerRevoked(address indexed caller);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "FIRRegistry: caller is not the owner");
+        _;
+    }
+
+    modifier onlyAuthorized() {
+        require(authorizedCallers[msg.sender], "FIRRegistry: caller is not authorized");
+        _;
+    }
+
+    /**
+     * @notice Grant write access to an address.
+     */
+    function authorize(address caller) external onlyOwner {
+        require(caller != address(0), "FIRRegistry: zero address");
+        authorizedCallers[caller] = true;
+        emit CallerAuthorized(caller);
+    }
+
+    /**
+     * @notice Revoke write access from an address.
+     */
+    function revoke(address caller) external onlyOwner {
+        authorizedCallers[caller] = false;
+        emit CallerRevoked(caller);
+    }
+
+    /**
+     * @notice Transfer contract ownership.
+     */
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "FIRRegistry: zero address");
+        owner = newOwner;
+    }
+
+    // ─── Data structures ─────────────────────────────────────────────────────
+
     struct FIR {
         string firId;
         string cid;
@@ -42,6 +94,8 @@ contract FIRRegistry {
     // Total count of registered FIRs
     uint256 public firCount;
 
+    // ─── Events ──────────────────────────────────────────────────────────────
+
     event FIRCreated(
         string indexed firId,
         string cid,
@@ -63,6 +117,17 @@ contract FIRRegistry {
         uint256 timestamp
     );
 
+    // ─── Constructor ─────────────────────────────────────────────────────────
+
+    constructor() {
+        owner = msg.sender;
+        // Deployer is automatically authorized to write
+        authorizedCallers[msg.sender] = true;
+        emit CallerAuthorized(msg.sender);
+    }
+
+    // ─── Write functions (authorized callers only) ────────────────────────────
+
     /**
      * @notice Register a new FIR on the blockchain.
      */
@@ -70,7 +135,7 @@ contract FIRRegistry {
         string calldata firId,
         string calldata cid,
         string calldata dataHash
-    ) external {
+    ) external onlyAuthorized {
         require(!firs[firId].exists, "FIRRegistry: FIR already registered");
         require(bytes(firId).length > 0, "FIRRegistry: firId cannot be empty");
         require(bytes(cid).length > 0, "FIRRegistry: CID cannot be empty");
@@ -97,7 +162,7 @@ contract FIRRegistry {
     /**
      * @notice Record a police officer's verification of an FIR on-chain.
      */
-    function verifyFIR(string calldata firId) external {
+    function verifyFIR(string calldata firId) external onlyAuthorized {
         require(firs[firId].exists, "FIRRegistry: FIR not registered");
         require(!verifications[firId].exists, "FIRRegistry: FIR already verified on-chain");
 
@@ -116,7 +181,7 @@ contract FIRRegistry {
     /**
      * @notice Record a status update on-chain (under-verification, rejected, etc.)
      */
-    function updateStatus(string calldata firId, string calldata status) external {
+    function updateStatus(string calldata firId, string calldata status) external onlyAuthorized {
         require(firs[firId].exists, "FIRRegistry: FIR not registered");
         require(bytes(status).length > 0, "FIRRegistry: status cannot be empty");
 
@@ -124,6 +189,8 @@ contract FIRRegistry {
 
         emit StatusUpdated(firId, status, msg.sender, block.timestamp);
     }
+
+    // ─── Read functions (public) ──────────────────────────────────────────────
 
     /**
      * @notice Get the number of status history entries for an FIR.
