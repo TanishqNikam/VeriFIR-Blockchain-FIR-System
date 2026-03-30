@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, PieChart, TrendingUp, FileText } from "lucide-react"
+import { BarChart3, PieChart, TrendingUp, FileText, Clock, MapPin } from "lucide-react"
 import { useFIRs } from "@/hooks/use-firs"
 import { useLanguage } from "@/lib/i18n/language-context"
 
@@ -18,7 +18,35 @@ export default function ReportsPage() {
   const pendingRate = totalFIRs > 0 ? Math.round((pendingFIRs / totalFIRs) * 100) : 0
   const processingRate = totalFIRs > 0 ? Math.round((underVerificationFIRs / totalFIRs) * 100) : 0
 
-  // Compute real monthly data from the last 6 months
+  // Average resolution time (filing → verification) for verified FIRs
+  const avgResolutionTime = (() => {
+    const resolved = firs.filter((f) => f.status === "verified" && f.verifiedAt && f.filedDate)
+    if (resolved.length === 0) return null
+    const totalMs = resolved.reduce((sum, f) => {
+      return sum + (new Date(f.verifiedAt!).getTime() - new Date(f.filedDate).getTime())
+    }, 0)
+    const avgMs = totalMs / resolved.length
+    const avgHours = avgMs / (1000 * 60 * 60)
+    if (avgHours < 24) return `${Math.round(avgHours)}${t("admin.reports.hours")}`
+    return `${(avgHours / 24).toFixed(1)}${t("admin.reports.days")}`
+  })()
+
+  // Jurisdiction (pincode) breakdown
+  const jurisdictionData = (() => {
+    const map = new Map<string, number>()
+    for (const fir of firs) {
+      const key = fir.pincode || "Unknown"
+      map.set(key, (map.get(key) ?? 0) + 1)
+    }
+    return Array.from(map.entries())
+      .map(([pincode, count]) => ({ pincode, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8)
+  })()
+
+  const maxJurisdictionCount = Math.max(...jurisdictionData.map((d) => d.count), 1)
+
+  // Monthly trends for last 6 months
   const monthlyData = (() => {
     const months: { month: string; firs: number; verified: number }[] = []
     const now = new Date()
@@ -122,7 +150,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        {/* Verification Rate */}
+        {/* Verification Metrics */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -225,6 +253,37 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
+      {/* Jurisdiction Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            {t("admin.reports.jurisdictionBreakdown")}
+          </CardTitle>
+          <CardDescription>{t("admin.reports.jurisdictionBreakdownDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {jurisdictionData.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">{t("admin.reports.noJurisdictionData")}</p>
+          ) : (
+            <div className="space-y-3">
+              {jurisdictionData.map(({ pincode, count }) => (
+                <div key={pincode} className="flex items-center gap-4">
+                  <span className="w-20 text-sm font-mono text-foreground shrink-0">{pincode}</span>
+                  <div className="flex-1 h-6 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary/70 transition-all"
+                      style={{ width: `${(count / maxJurisdictionCount) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-sm font-medium text-foreground text-right shrink-0">{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Summary Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -258,12 +317,12 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10">
-                <BarChart3 className="h-6 w-6 text-warning" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Clock className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{firsWithEvidence}</p>
-                <p className="text-sm text-muted-foreground">{t("admin.reports.firsWithEvidence")}</p>
+                <p className="text-2xl font-bold text-foreground">{avgResolutionTime ?? "—"}</p>
+                <p className="text-sm text-muted-foreground">{t("admin.reports.avgResolutionTime")}</p>
               </div>
             </div>
           </CardContent>
@@ -272,8 +331,8 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                <PieChart className="h-6 w-6 text-primary" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10">
+                <BarChart3 className="h-6 w-6 text-warning" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{totalEvidenceFiles}</p>
