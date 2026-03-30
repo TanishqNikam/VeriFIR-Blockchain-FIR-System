@@ -409,7 +409,7 @@ export default function FileFIRPage() {
                   <FieldRow className="sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="incidentDate">Date From <span className="text-destructive">*</span></Label>
-                      <Input id="incidentDate" type="date" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} required />
+                      <Input id="incidentDate" type="date" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} onKeyDown={(e) => e.preventDefault()} required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="incidentDateTo">Date To (if multi-day)</Label>
@@ -418,6 +418,7 @@ export default function FileFIRPage() {
                         type="date"
                         value={incidentDateTo}
                         min={incidentDate}
+                        onKeyDown={(e) => e.preventDefault()}
                         onChange={(e) => {
                           const val = e.target.value
                           if (val && incidentDate && val < incidentDate) {
