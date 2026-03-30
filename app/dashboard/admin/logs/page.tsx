@@ -188,7 +188,7 @@ export default function BlockchainLogsPage() {
                             <Copy className="h-3 w-3" />
                           </Button>
                           <a
-                            href={`https://etherscan.io/tx/${log.txHash}`}
+                            href={`https://sepolia.etherscan.io/tx/${log.txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-1 text-muted-foreground hover:text-primary"

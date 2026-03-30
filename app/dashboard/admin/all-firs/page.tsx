@@ -192,7 +192,7 @@ export default function AllFIRsPage() {
                         <div className="flex items-center gap-1">
                           <span className="font-mono text-xs truncate max-w-32">{fir.blockchainTxHash.slice(0, 16)}...</span>
                           <a
-                            href={`https://etherscan.io/tx/${fir.blockchainTxHash}`}
+                            href={`https://sepolia.etherscan.io/tx/${fir.blockchainTxHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-muted-foreground hover:text-primary"

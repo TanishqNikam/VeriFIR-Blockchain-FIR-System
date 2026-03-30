@@ -247,7 +247,7 @@ export default function PublicVerifyPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {[
-                  { label: t("verify.transactionHash"), value: result.blockchainTxHash },
+                  { label: t("verify.transactionHash"), value: result.blockchainTxHash, link: `https://sepolia.etherscan.io/tx/${result.blockchainTxHash}` },
                   { label: "IPFS CID", value: result.ipfsCid, link: `https://gateway.pinata.cloud/ipfs/${result.ipfsCid}` },
                   { label: t("verify.dataHash"), value: result.storedHash },
                 ].map(({ label, value, link }) => (

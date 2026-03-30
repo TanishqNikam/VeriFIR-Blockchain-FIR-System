@@ -626,6 +626,9 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
                   <Button variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8" onClick={() => copyToClipboard(fir.blockchainTxHash, "Transaction Hash")}>
                     <Copy className="h-3 w-3" />
                   </Button>
+                  <a href={`https://sepolia.etherscan.io/tx/${fir.blockchainTxHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center text-muted-foreground hover:text-primary rounded-md hover:bg-accent">
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
                 </div>
               </div>
               <div>
@@ -680,7 +683,12 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
               <div className="rounded-lg bg-secondary p-4 space-y-3">
                 <div>
                   <p className="text-xs text-muted-foreground">{t("fir.transactionHash")}</p>
-                  <code className="block text-sm font-mono mt-1 break-all">{verificationResult.txHash}</code>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="flex-1 text-sm font-mono break-all">{verificationResult.txHash}</code>
+                    <a href={`https://sepolia.etherscan.io/tx/${verificationResult.txHash}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary flex-shrink-0">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">{t("police.review.verifierWallet")}</p>

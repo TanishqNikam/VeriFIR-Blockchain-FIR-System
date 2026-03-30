@@ -33,6 +33,7 @@ export default function FIRDetailPage({ params }: { params: Promise<{ id: string
   const { t } = useLanguage()
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false)
 
   const handleDownloadPdf = async () => {
     if (!fir) return
@@ -88,6 +89,48 @@ export default function FIRDetailPage({ params }: { params: Promise<{ id: string
       }
     }
     toast({ title: "Download Failed", description: "Could not reach any IPFS gateway.", variant: "destructive" })
+  }
+
+  const downloadAllEvidence = async () => {
+    if (!fir) return
+    const allFiles = [
+      ...fir.evidenceFiles,
+      ...(fir.policeEvidenceFiles ?? []),
+    ]
+    if (allFiles.length === 0) return
+    setIsDownloadingZip(true)
+    try {
+      const JSZip = (await import("jszip")).default
+      const zip = new JSZip()
+      await Promise.all(
+        allFiles.map(async (file) => {
+          for (const gateway of IPFS_GATEWAYS) {
+            try {
+              const res = await fetch(`${gateway}/${file.ipfsCid}`)
+              if (!res.ok) continue
+              const blob = await res.blob()
+              zip.file(file.name, blob)
+              return
+            } catch {
+              // try next gateway
+            }
+          }
+        })
+      )
+      const content = await zip.generateAsync({ type: "blob" })
+      const url = URL.createObjectURL(content)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${fir.id}-evidence.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast({ title: "Download Failed", description: "Could not create ZIP file.", variant: "destructive" })
+    } finally {
+      setIsDownloadingZip(false)
+    }
   }
 
   const handleAppeal = async () => {
@@ -297,12 +340,20 @@ export default function FIRDetailPage({ params }: { params: Promise<{ id: string
                   <CardTitle>{t("fir.evidenceFiles")}</CardTitle>
                   <CardDescription>{t("fir.evidenceFilesDesc")}</CardDescription>
                 </div>
-                {canAddEvidence && (
-                  <Button size="sm" variant="outline" onClick={() => setShowEvidenceDialog(true)}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    {t("fir.addEvidence")}
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {fir.evidenceFiles.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={downloadAllEvidence} disabled={isDownloadingZip}>
+                      {isDownloadingZip ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                      Download All
+                    </Button>
+                  )}
+                  {canAddEvidence && (
+                    <Button size="sm" variant="outline" onClick={() => setShowEvidenceDialog(true)}>
+                      <Upload className="mr-2 h-4 w-4" />
+                      {t("fir.addEvidence")}
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -471,6 +522,9 @@ export default function FIRDetailPage({ params }: { params: Promise<{ id: string
                       <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(fir.blockchainTxHash, "Transaction Hash")}>
                         <Copy className="h-3 w-3" />
                       </Button>
+                      <a href={`https://sepolia.etherscan.io/tx/${fir.blockchainTxHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center text-muted-foreground hover:text-primary rounded-md hover:bg-accent">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
                     </div>
                   </div>
                   <div>

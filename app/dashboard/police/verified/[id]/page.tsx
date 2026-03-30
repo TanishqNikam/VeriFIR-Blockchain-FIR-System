@@ -310,6 +310,9 @@ export default function VerifiedFIRDetailPage({ params }: { params: Promise<{ id
                       <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(fir.blockchainTxHash, "Tx Hash")}>
                         <Copy className="h-3 w-3" />
                       </Button>
+                      <a href={`https://sepolia.etherscan.io/tx/${fir.blockchainTxHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center text-muted-foreground hover:text-primary rounded-md hover:bg-accent">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
                     </div>
                   </div>
                   {fir.verificationTxHash && (
@@ -320,6 +323,9 @@ export default function VerifiedFIRDetailPage({ params }: { params: Promise<{ id
                         <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(fir.verificationTxHash!, "Verification Tx Hash")}>
                           <Copy className="h-3 w-3" />
                         </Button>
+                        <a href={`https://sepolia.etherscan.io/tx/${fir.verificationTxHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center text-muted-foreground hover:text-primary rounded-md hover:bg-accent">
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                       </div>
                     </div>
                   )}
