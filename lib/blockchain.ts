@@ -431,7 +431,6 @@ export function initContractEventListener(): void {
     });
 
     globalThis._contractListenerActive = true;
-    console.log("[blockchain] Contract event listener initialized");
   } catch (err) {
     console.warn("[blockchain] Could not start contract event listener:", err);
   }

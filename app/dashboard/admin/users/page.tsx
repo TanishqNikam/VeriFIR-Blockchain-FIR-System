@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -67,7 +67,7 @@ export default function AdminUsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<ManagedUser | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
       const params = roleFilter !== "all" ? `?role=${roleFilter}` : ""
@@ -80,9 +80,9 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [roleFilter, toast])
 
-  useEffect(() => { fetchUsers() }, [roleFilter]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchUsers() }, [fetchUsers])
 
   const filtered = users.filter((u) =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||

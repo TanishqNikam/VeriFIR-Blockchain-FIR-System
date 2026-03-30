@@ -77,7 +77,6 @@ export interface FIR {
   typeOfInformation?: "written" | "oral"
   placeAddress?: string
   distanceFromPS?: string
-  beatNo?: string
   complainantDetails?: FIRComplainantDetails
   accusedDetails?: FIRAccused[]
   delayReason?: string

@@ -244,7 +244,6 @@ export async function POST(req: Request) {
           { firId },
           { $set: { blockchainTxHash: result.txHash, blockNumber: result.blockNumber } }
         );
-        console.log(`[POST /api/fir] Blockchain registered: ${firId} → tx ${result.txHash}`);
       })
       .catch((err) => {
         console.warn(`[POST /api/fir] Blockchain registration failed for ${firId}:`, err.message);

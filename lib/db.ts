@@ -60,10 +60,7 @@ export async function connectDB(): Promise<typeof mongoose> {
         // Don't buffer operations while disconnected — fail fast instead
         bufferCommands: false,
       })
-      .then((m) => {
-        console.log("[MongoDB] Connected");
-        return m;
-      });
+      .then((m) => m);
   }
 
   cached.conn = await cached.promise;

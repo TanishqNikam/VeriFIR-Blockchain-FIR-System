@@ -156,7 +156,7 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
       const data = await res.json()
       setVerificationResult({
         txHash: data.verificationTxHash,
-        walletAddress: user?.walletAddress || "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD58",
+        walletAddress: user?.walletAddress ?? "",
         onChain: data.onChain,
       })
       toast({ title: "FIR Verified Successfully", description: `FIR ${fir.id} has been verified and endorsed.` })
