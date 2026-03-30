@@ -114,6 +114,7 @@ export default function FileFIRPage() {
   const { user } = useAuth()
 
   const [step, setStep] = useState(1)
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [result, setResult] = useState<SubmissionResult | null>(null)
 
@@ -127,12 +128,10 @@ export default function FileFIRPage() {
   const [incidentTimeTo, setIncidentTimeTo] = useState("")
   const [placeAddress, setPlaceAddress] = useState("")
   const [distanceFromPS, setDistanceFromPS] = useState("")
-  const [beatNo, setBeatNo] = useState("")
   // location is the short "area name" used in list views + hash; placeAddress is the full address
   const [location, setLocation] = useState("")
 
   // ── Step 2: Offence ──────────────────────────────────────────────────────────
-  const [typeOfInformation, setTypeOfInformation] = useState<"written" | "oral">("written")
   const [acts, setActs] = useState<ActRow[]>([{ act: "", sections: "" }])
   // title = brief description of the offence (shown in lists)
   const [title, setTitle] = useState("")
@@ -203,7 +202,10 @@ export default function FileFIRPage() {
 
   // ── Navigation ────────────────────────────────────────────────────────────────
 
-  const nextStep = () => setStep((s) => Math.min(s + 1, STEPS.length))
+  const nextStep = () => {
+    setCompletedSteps((prev) => new Set([...prev, step]))
+    setStep((s) => Math.min(s + 1, STEPS.length))
+  }
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1))
 
@@ -213,29 +215,24 @@ export default function FileFIRPage() {
     if (stepId === 1) return !!(pincode && /^\d{6}$/.test(pincode) && incidentDate && location.trim())
     if (stepId === 2) return !!(title.trim())
     if (stepId === 5) return !!(firstInformationContents.trim())
-    return true
+    // Optional steps only show tick after the user has explicitly moved past them
+    return completedSteps.has(stepId)
   }
 
   const handleSubmit = async () => {
     // Validate all required fields across all steps before submitting
-    if (!pincode || !/^\d{6}$/.test(pincode)) {
-      toast({ title: "Required", description: "A valid 6-digit pincode is required to route the FIR.", variant: "destructive" })
-      return
-    }
-    if (!incidentDate) {
-      toast({ title: "Required", description: "Date of occurrence is required.", variant: "destructive" })
-      return
-    }
-    if (!location.trim()) {
-      toast({ title: "Required", description: "Area / locality of occurrence is required.", variant: "destructive" })
-      return
-    }
-    if (!title.trim()) {
-      toast({ title: "Required", description: "Brief description of the offence is required.", variant: "destructive" })
-      return
-    }
-    if (!firstInformationContents.trim()) {
-      toast({ title: "Required", description: "First Information Contents (narrative) is required.", variant: "destructive" })
+    const missingFields: string[] = []
+    if (!pincode || !/^\d{6}$/.test(pincode)) missingFields.push("Incident Details (Step 1): Valid 6-digit pincode")
+    if (!incidentDate) missingFields.push("Incident Details (Step 1): Date of occurrence")
+    if (!location.trim()) missingFields.push("Incident Details (Step 1): Area / locality name")
+    if (!title.trim()) missingFields.push("Offence Details (Step 2): Brief description of offence")
+    if (!firstInformationContents.trim()) missingFields.push("Narrative (Step 5): First Information Contents")
+    if (missingFields.length > 0) {
+      toast({
+        title: `${missingFields.length} Required Field${missingFields.length > 1 ? "s" : ""} Missing`,
+        description: missingFields.join(" • "),
+        variant: "destructive",
+      })
       return
     }
 
@@ -257,10 +254,9 @@ export default function FileFIRPage() {
       if (incidentDateTo) formData.append("incidentDateTo", incidentDateTo)
       if (incidentTimeFrom) formData.append("incidentTimeFrom", incidentTimeFrom)
       if (incidentTimeTo) formData.append("incidentTimeTo", incidentTimeTo)
-      formData.append("typeOfInformation", typeOfInformation)
+      formData.append("typeOfInformation", "written")
       if (placeAddress) formData.append("placeAddress", placeAddress)
       if (distanceFromPS) formData.append("distanceFromPS", distanceFromPS)
-      if (beatNo) formData.append("beatNo", beatNo)
       if (delayReason) formData.append("delayReason", delayReason)
       if (firstInformationContents) formData.append("firstInformationContents", firstInformationContents)
       if (totalPropertyValue > 0) formData.append("totalPropertyValue", String(totalPropertyValue))
@@ -313,8 +309,17 @@ export default function FileFIRPage() {
     }
   }
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const el = document.createElement("textarea")
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand("copy")
+      document.body.removeChild(el)
+    }
     toast({ title: "Copied", description: `${label} copied to clipboard.` })
   }
 
@@ -408,7 +413,21 @@ export default function FileFIRPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="incidentDateTo">Date To (if multi-day)</Label>
-                      <Input id="incidentDateTo" type="date" value={incidentDateTo} onChange={(e) => setIncidentDateTo(e.target.value)} min={incidentDate} />
+                      <Input
+                        id="incidentDateTo"
+                        type="date"
+                        value={incidentDateTo}
+                        min={incidentDate}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          if (val && incidentDate && val < incidentDate) {
+                            toast({ title: "Invalid Date", description: "End date cannot be before start date.", variant: "destructive" })
+                            setIncidentDateTo("")
+                            return
+                          }
+                          setIncidentDateTo(val)
+                        }}
+                      />
                     </div>
                   </FieldRow>
                   <FieldRow className="sm:grid-cols-2 mt-4">
@@ -448,16 +467,10 @@ export default function FileFIRPage() {
                         rows={3}
                       />
                     </div>
-                    <FieldRow className="sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="distanceFromPS">Direction &amp; Distance from P.S.</Label>
-                        <Input id="distanceFromPS" placeholder="e.g. West, 0.1 km" value={distanceFromPS} onChange={(e) => setDistanceFromPS(e.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="beatNo">Beat No.</Label>
-                        <Input id="beatNo" placeholder="e.g. Beat 7" value={beatNo} onChange={(e) => setBeatNo(e.target.value)} />
-                      </div>
-                    </FieldRow>
+                    <div className="space-y-2">
+                      <Label htmlFor="distanceFromPS">Direction &amp; Distance from P.S.</Label>
+                      <Input id="distanceFromPS" placeholder="e.g. West, 0.1 km" value={distanceFromPS} onChange={(e) => setDistanceFromPS(e.target.value)} />
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -484,24 +497,6 @@ export default function FileFIRPage() {
                   <p className="text-xs text-muted-foreground">This appears as the FIR title in all views.</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Type of Information</Label>
-                  <div className="flex gap-4">
-                    {(["written", "oral"] as const).map((opt) => (
-                      <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="typeOfInformation"
-                          value={opt}
-                          checked={typeOfInformation === opt}
-                          onChange={() => setTypeOfInformation(opt)}
-                          className="accent-primary"
-                        />
-                        <span className="text-sm capitalize">{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Acts & Sections table */}
                 <div>
@@ -739,8 +734,9 @@ export default function FileFIRPage() {
               <CardContent className="space-y-6">
                 {/* Narrative */}
                 <div>
-                  <SectionTitle num={12} title="First Information Contents (फिर्याद)" />
+                  <SectionTitle num={12} title="First Information Contents" />
                   <div className="space-y-2">
+                    <Label className="text-sm font-medium">Narrative <span className="text-destructive">*</span></Label>
                     <Textarea
                       placeholder="Write your complete complaint here — describe what happened, when, where, and who was involved. Be as detailed as possible. This is the core of your FIR and will be verified by the police officer."
                       className="min-h-48"

@@ -7,10 +7,20 @@ import { useState } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageToggle } from "@/components/language-toggle"
 import { useLanguage } from "@/lib/i18n/language-context"
+import { useAuth } from "@/lib/auth-context"
 
 export function LandingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { t } = useLanguage()
+  const { user } = useAuth()
+
+  const dashboardHref = user
+    ? user.role === "admin"
+      ? "/dashboard/admin"
+      : user.role === "police"
+      ? "/dashboard/police"
+      : "/dashboard/citizen"
+    : "/login"
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -43,7 +53,7 @@ export function LandingHeader() {
           {/* Right — actions */}
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" asChild className="hidden md:inline-flex">
-              <Link href="/login">{t("nav.login")}</Link>
+              <Link href={dashboardHref}>{user ? "Dashboard" : t("nav.login")}</Link>
             </Button>
             <Button asChild className="hidden md:inline-flex">
               <Link href="/verify">{t("nav.verifyFir")}</Link>
@@ -80,7 +90,7 @@ export function LandingHeader() {
                   <ThemeToggle />
                 </div>
                 <Button variant="ghost" asChild className="justify-start">
-                  <Link href="/login">{t("nav.login")}</Link>
+                  <Link href={dashboardHref}>{user ? "Dashboard" : t("nav.login")}</Link>
                 </Button>
                 <Button asChild>
                   <Link href="/verify">{t("nav.verifyFir")}</Link>

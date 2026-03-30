@@ -57,8 +57,17 @@ export default function FIRDetailPage({ params }: { params: Promise<{ id: string
   const [isUploading, setIsUploading] = useState(false)
   const [showTechDetails, setShowTechDetails] = useState(false)
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const el = document.createElement("textarea")
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand("copy")
+      document.body.removeChild(el)
+    }
     toast({ title: "Copied", description: `${label} copied to clipboard.` })
   }
 

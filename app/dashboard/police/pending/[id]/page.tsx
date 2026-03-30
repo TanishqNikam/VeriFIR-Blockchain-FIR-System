@@ -124,8 +124,17 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
     toast({ title: "Download Failed", description: "Could not reach any IPFS gateway.", variant: "destructive" })
   }
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text)
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const el = document.createElement("textarea")
+      el.value = text
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand("copy")
+      document.body.removeChild(el)
+    }
     toast({ title: "Copied", description: `${label} copied to clipboard.` })
   }
 
