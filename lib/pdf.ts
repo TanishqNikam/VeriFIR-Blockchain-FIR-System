@@ -257,7 +257,8 @@ export async function downloadFIRPdf(fir: FIR): Promise<void> {
   if (fir.status === "verified") {
     const pageH = doc.internal.pageSize.getHeight()
     doc.saveGraphicsState()
-    doc.setGState(new doc.GState({ opacity: 0.07 }))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    doc.setGState(new (doc as any).GState({ opacity: 0.07 }))
     doc.setTextColor(22, 163, 74)
     doc.setFontSize(44)
     doc.setFont("helvetica", "bold")
