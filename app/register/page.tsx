@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Shield, User, Loader2, Eye, EyeOff } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -22,11 +23,15 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [gender, setGender] = useState("")
+  const [phone, setPhone] = useState("")
+  const [aadhaar, setAadhaar] = useState("")
+  const [dateOfBirth, setDateOfBirth] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !gender || !phone || !aadhaar || !dateOfBirth) {
       toast({ title: "Validation Error", description: "Please fill in all fields.", variant: "destructive" })
       return
     }
@@ -36,14 +41,14 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: "citizen" }),
+        body: JSON.stringify({ name, email, password, role: "citizen", gender, phone, aadhaar, dateOfBirth }),
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Registration failed")
 
-      toast({ title: "Account Created", description: "You can now log in with your credentials." })
-      router.push("/login")
+      toast({ title: "Account Created", description: "Please check your email for a verification OTP." })
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     } catch (err) {
       toast({
         title: "Registration Failed",
@@ -85,7 +90,7 @@ export default function RegisterPage() {
             <CardDescription>{t("auth.registerDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Citizen role indicator */}
               <div className="flex items-center gap-3 rounded-lg border border-primary bg-primary/5 p-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -131,6 +136,58 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select onValueChange={setGender} required>
+                  <SelectTrigger id="gender">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="10-digit mobile number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  inputMode="numeric"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="aadhaar">Aadhaar Number</Label>
+                <Input
+                  id="aadhaar"
+                  placeholder="12-digit Aadhaar number"
+                  value={aadhaar}
+                  onChange={(e) => setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                  inputMode="numeric"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Only the last 4 digits will be stored for privacy.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dob">Date of Birth</Label>
+                <Input
+                  id="dob"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  max={new Date().toISOString().split("T")[0]}
+                  required
+                />
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>

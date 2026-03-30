@@ -59,6 +59,14 @@ export async function POST(req: Request) {
       );
     }
 
+    // Block unverified citizen accounts
+    if (user.role === "citizen" && !user.emailVerified) {
+      return NextResponse.json(
+        { error: "Please verify your email before logging in.", unverified: true, email: user.email },
+        { status: 403 }
+      );
+    }
+
     // ── Audit log ───────────────────────────────────────────────────────────
     logAudit({
       action: "USER_LOGIN",

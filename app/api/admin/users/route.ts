@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, email, password, role, pincode, walletAddress } = body;
+    const { name, email, password, role, pincode, walletAddress, badgeNumber, policeStation } = body;
 
     if (!name?.trim() || !email?.trim() || !password || !role) {
       return NextResponse.json(
@@ -94,6 +94,9 @@ export async function POST(req: Request) {
       role,
       pincode: role === "police" ? pincode?.trim() || undefined : undefined,
       walletAddress: walletAddress?.trim() || undefined,
+      badgeNumber: role === "police" ? badgeNumber?.trim() || undefined : undefined,
+      policeStation: role === "police" ? policeStation?.trim() || undefined : undefined,
+      emailVerified: true, // admin-created accounts are pre-verified
     });
 
     logAudit({
@@ -134,7 +137,7 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json();
-    const { userId, name, pincode, walletAddress, role } = body;
+    const { userId, name, pincode, walletAddress, role, badgeNumber, policeStation } = body;
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -161,6 +164,14 @@ export async function PATCH(req: Request) {
     if (walletAddress !== undefined) {
       user.walletAddress = walletAddress?.trim() || undefined;
       changes.push("walletAddress");
+    }
+    if (badgeNumber !== undefined) {
+      user.badgeNumber = badgeNumber?.trim() || undefined;
+      changes.push("badgeNumber");
+    }
+    if (policeStation !== undefined) {
+      user.policeStation = policeStation?.trim() || undefined;
+      changes.push("policeStation");
     }
     if (role && ["citizen", "police", "admin"].includes(role) && role !== user.role) {
       user.role = role;

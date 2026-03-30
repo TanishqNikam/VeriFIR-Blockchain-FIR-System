@@ -8,6 +8,13 @@ export interface User {
   walletAddress?: string
   /** Jurisdiction pincode (police officers only) */
   pincode?: string
+  gender?: "male" | "female" | "other"
+  phone?: string
+  aadhaarMasked?: string
+  dateOfBirth?: string
+  badgeNumber?: string
+  policeStation?: string
+  emailVerified?: boolean
 }
 
 export type FIRStatus = "pending" | "under-verification" | "verified" | "rejected"

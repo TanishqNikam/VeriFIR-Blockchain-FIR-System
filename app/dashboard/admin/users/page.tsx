@@ -32,6 +32,8 @@ interface ManagedUser {
   role: UserRole
   pincode?: string
   walletAddress?: string
+  badgeNumber?: string
+  policeStation?: string
   createdAt: string
 }
 
@@ -53,11 +55,12 @@ export default function AdminUsersPage() {
   const [creating, setCreating] = useState(false)
   const [createForm, setCreateForm] = useState({
     name: "", email: "", password: "", role: "citizen" as UserRole, pincode: "", walletAddress: "",
+    badgeNumber: "", policeStation: "",
   })
 
   // Edit dialog
   const [editUser, setEditUser] = useState<ManagedUser | null>(null)
-  const [editForm, setEditForm] = useState({ name: "", pincode: "", walletAddress: "" })
+  const [editForm, setEditForm] = useState({ name: "", pincode: "", walletAddress: "", badgeNumber: "", policeStation: "" })
   const [saving, setSaving] = useState(false)
 
   // Delete confirm
@@ -108,7 +111,7 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error(data.error)
       toast({ title: "User created", description: `${data.user.userId} created successfully.` })
       setShowCreate(false)
-      setCreateForm({ name: "", email: "", password: "", role: "citizen", pincode: "", walletAddress: "" })
+      setCreateForm({ name: "", email: "", password: "", role: "citizen", pincode: "", walletAddress: "", badgeNumber: "", policeStation: "" })
       fetchUsers()
     } catch (e) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to create user.", variant: "destructive" })
@@ -120,7 +123,7 @@ export default function AdminUsersPage() {
   // ── Edit ────────────────────────────────────────────────────────────────────
   const openEdit = (u: ManagedUser) => {
     setEditUser(u)
-    setEditForm({ name: u.name, pincode: u.pincode || "", walletAddress: u.walletAddress || "" })
+    setEditForm({ name: u.name, pincode: u.pincode || "", walletAddress: u.walletAddress || "", badgeNumber: u.badgeNumber || "", policeStation: u.policeStation || "" })
   }
 
   const handleSaveEdit = async () => {
@@ -298,17 +301,27 @@ export default function AdminUsersPage() {
               </Select>
             </div>
             {createForm.role === "police" && (
-              <div className="space-y-1">
-                <Label>Jurisdiction Pincode</Label>
-                <Input
-                  value={createForm.pincode}
-                  onChange={(e) => setCreateForm((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
-                  placeholder="6-digit area pincode"
-                  maxLength={6}
-                  inputMode="numeric"
-                />
-                <p className="text-xs text-muted-foreground">FIRs from this pincode area will be visible to this officer.</p>
-              </div>
+              <>
+                <div className="space-y-1">
+                  <Label>Jurisdiction Pincode</Label>
+                  <Input
+                    value={createForm.pincode}
+                    onChange={(e) => setCreateForm((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+                    placeholder="6-digit area pincode"
+                    maxLength={6}
+                    inputMode="numeric"
+                  />
+                  <p className="text-xs text-muted-foreground">FIRs from this pincode area will be visible to this officer.</p>
+                </div>
+                <div className="space-y-1">
+                  <Label>Badge / Service Number</Label>
+                  <Input value={createForm.badgeNumber} onChange={(e) => setCreateForm((p) => ({ ...p, badgeNumber: e.target.value }))} placeholder="e.g. MH-12345" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Police Station</Label>
+                  <Input value={createForm.policeStation} onChange={(e) => setCreateForm((p) => ({ ...p, policeStation: e.target.value }))} placeholder="e.g. Andheri Police Station" />
+                </div>
+              </>
             )}
             <div className="space-y-1">
               <Label>Wallet Address (optional)</Label>
@@ -337,16 +350,26 @@ export default function AdminUsersPage() {
               <Input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
             </div>
             {editUser?.role === "police" && (
-              <div className="space-y-1">
-                <Label>Jurisdiction Pincode</Label>
-                <Input
-                  value={editForm.pincode}
-                  onChange={(e) => setEditForm((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
-                  placeholder="6-digit area pincode"
-                  maxLength={6}
-                  inputMode="numeric"
-                />
-              </div>
+              <>
+                <div className="space-y-1">
+                  <Label>Jurisdiction Pincode</Label>
+                  <Input
+                    value={editForm.pincode}
+                    onChange={(e) => setEditForm((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+                    placeholder="6-digit area pincode"
+                    maxLength={6}
+                    inputMode="numeric"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Badge / Service Number</Label>
+                  <Input value={editForm.badgeNumber} onChange={(e) => setEditForm((p) => ({ ...p, badgeNumber: e.target.value }))} placeholder="e.g. MH-12345" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Police Station</Label>
+                  <Input value={editForm.policeStation} onChange={(e) => setEditForm((p) => ({ ...p, policeStation: e.target.value }))} placeholder="e.g. Andheri Police Station" />
+                </div>
+              </>
             )}
             <div className="space-y-1">
               <Label>Wallet Address</Label>
