@@ -1,25 +1,25 @@
 /**
  * POST /api/auth/register
- * Create a new user account.
- * Body: { name, email, password, role }
+ * Create a new citizen account.
+ * Police and admin accounts are created exclusively by admins via /api/admin/users.
+ * Body: { name, email, password }
  */
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import UserModel, { hashPassword } from "@/lib/models/User";
-import type { UserRole } from "@/lib/types";
-
-const VALID_ROLES: UserRole[] = ["citizen", "police", "admin"];
 
 export async function POST(req: Request) {
   try {
     const { name, email, password, role } = await req.json();
 
-    if (!name?.trim() || !email?.trim() || !password || !role) {
-      return NextResponse.json({ error: "name, email, password and role are required" }, { status: 400 });
+    if (!name?.trim() || !email?.trim() || !password) {
+      return NextResponse.json({ error: "name, email and password are required" }, { status: 400 });
     }
-    if (!VALID_ROLES.includes(role)) {
-      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    // Only citizen self-registration is allowed. Police/admin accounts are
+    // created by administrators through the admin dashboard.
+    if (role && role !== "citizen") {
+      return NextResponse.json({ error: "Police and admin accounts must be created by an administrator" }, { status: 403 });
     }
     // Enforce minimum length consistent with reset-password endpoint
     if (password.length < 8) {

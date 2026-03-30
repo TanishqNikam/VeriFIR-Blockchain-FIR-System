@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Shield, User, BadgeCheck, Settings, Loader2, Eye, EyeOff } from "lucide-react"
-import type { UserRole } from "@/lib/types"
+import { Shield, User, Loader2, Eye, EyeOff } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageToggle } from "@/components/language-toggle"
 import { useLanguage } from "@/lib/i18n/language-context"
@@ -19,13 +18,6 @@ export default function RegisterPage() {
   const { toast } = useToast()
   const { t } = useLanguage()
 
-  const roles = [
-    { id: "citizen" as UserRole, label: t("auth.citizen"), description: "File FIRs and track status", icon: User },
-    { id: "police" as UserRole, label: t("auth.policeOfficer"), description: "Verify and process FIRs", icon: BadgeCheck },
-    { id: "admin" as UserRole, label: t("auth.adminAuditor"), description: "System oversight and reports", icon: Settings },
-  ]
-
-  const [selectedRole, setSelectedRole] = useState<UserRole>("citizen")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -44,7 +36,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: selectedRole }),
+        body: JSON.stringify({ name, email, password, role: "citizen" }),
       })
 
       const data = await res.json()
@@ -94,34 +86,19 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Role Selection */}
-              <div className="space-y-3">
-                <Label>{t("auth.selectRole")}</Label>
-                <div className="grid grid-cols-1 gap-3">
-                  {roles.map((role) => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => setSelectedRole(role.id)}
-                      className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
-                        selectedRole === role.id
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50 hover:bg-secondary/50"
-                      }`}
-                    >
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                        selectedRole === role.id ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                      }`}>
-                        <role.icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{role.label}</p>
-                        <p className="text-xs text-muted-foreground">{role.description}</p>
-                      </div>
-                    </button>
-                  ))}
+              {/* Citizen role indicator */}
+              <div className="flex items-center gap-3 rounded-lg border border-primary bg-primary/5 p-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">{t("auth.citizen")}</p>
+                  <p className="text-xs text-muted-foreground">File FIRs and track their status</p>
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground rounded-lg bg-secondary px-3 py-2">
+                Police and admin accounts are issued by system administrators only.
+              </p>
 
               <div className="space-y-2">
                 <Label htmlFor="name">{t("auth.fullName")}</Label>
