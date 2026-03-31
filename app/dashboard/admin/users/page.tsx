@@ -54,13 +54,13 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createForm, setCreateForm] = useState({
-    name: "", email: "", password: "", role: "citizen" as UserRole, pincode: "", walletAddress: "",
+    name: "", email: "", password: "", confirmPassword: "", role: "citizen" as UserRole, pincode: "", walletAddress: "",
     badgeNumber: "", policeStation: "",
   })
 
   // Edit dialog
   const [editUser, setEditUser] = useState<ManagedUser | null>(null)
-  const [editForm, setEditForm] = useState({ name: "", pincode: "", walletAddress: "", badgeNumber: "", policeStation: "" })
+  const [editForm, setEditForm] = useState({ pincode: "", walletAddress: "", badgeNumber: "", policeStation: "" })
   const [saving, setSaving] = useState(false)
 
   // Delete confirm
@@ -96,6 +96,10 @@ export default function AdminUsersPage() {
       toast({ title: "Validation", description: "Name, email, and password are required.", variant: "destructive" })
       return
     }
+    if (createForm.password !== createForm.confirmPassword) {
+      toast({ title: "Validation", description: "Passwords do not match.", variant: "destructive" })
+      return
+    }
     if (createForm.role === "police" && createForm.pincode && !/^\d{6}$/.test(createForm.pincode)) {
       toast({ title: "Validation", description: "Pincode must be 6 digits.", variant: "destructive" })
       return
@@ -111,7 +115,7 @@ export default function AdminUsersPage() {
       if (!res.ok) throw new Error(data.error)
       toast({ title: "User created", description: `${data.user.userId} created successfully.` })
       setShowCreate(false)
-      setCreateForm({ name: "", email: "", password: "", role: "citizen", pincode: "", walletAddress: "", badgeNumber: "", policeStation: "" })
+      setCreateForm({ name: "", email: "", password: "", confirmPassword: "", role: "citizen", pincode: "", walletAddress: "", badgeNumber: "", policeStation: "" })
       fetchUsers()
     } catch (e) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to create user.", variant: "destructive" })
@@ -123,7 +127,7 @@ export default function AdminUsersPage() {
   // ── Edit ────────────────────────────────────────────────────────────────────
   const openEdit = (u: ManagedUser) => {
     setEditUser(u)
-    setEditForm({ name: u.name, pincode: u.pincode || "", walletAddress: u.walletAddress || "", badgeNumber: u.badgeNumber || "", policeStation: u.policeStation || "" })
+    setEditForm({ pincode: u.pincode || "", walletAddress: u.walletAddress || "", badgeNumber: u.badgeNumber || "", policeStation: u.policeStation || "" })
   }
 
   const handleSaveEdit = async () => {
@@ -290,6 +294,13 @@ export default function AdminUsersPage() {
               <Input type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} placeholder="Temporary password" />
             </div>
             <div className="space-y-1">
+              <Label>Re-type Password *</Label>
+              <Input type="password" value={createForm.confirmPassword} onChange={(e) => setCreateForm((p) => ({ ...p, confirmPassword: e.target.value }))} placeholder="Confirm password" />
+              {createForm.confirmPassword && createForm.password !== createForm.confirmPassword && (
+                <p className="text-xs text-destructive">Passwords do not match.</p>
+              )}
+            </div>
+            <div className="space-y-1">
               <Label>Role *</Label>
               <Select value={createForm.role} onValueChange={(v) => setCreateForm((p) => ({ ...p, role: v as UserRole }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -345,10 +356,6 @@ export default function AdminUsersPage() {
             <DialogTitle>Edit User — {editUser?.userId}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1">
-              <Label>Name</Label>
-              <Input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
-            </div>
             {editUser?.role === "police" && (
               <>
                 <div className="space-y-1">

@@ -3,7 +3,7 @@
  *
  * GET  /api/admin/users          — List all users (with optional ?role= filter)
  * POST /api/admin/users          — Create a new user
- * PATCH /api/admin/users         — Update a user (pincode, name, role, active status)
+ * PATCH /api/admin/users         — Update a user (pincode, walletAddress, role, badgeNumber, policeStation)
  * DELETE /api/admin/users?id=    — Deactivate (soft-delete) a user
  */
 import { NextResponse } from "next/server";
@@ -137,7 +137,7 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json();
-    const { userId, name, pincode, walletAddress, role, badgeNumber, policeStation } = body;
+    const { userId, pincode, walletAddress, role, badgeNumber, policeStation } = body;
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -150,10 +150,6 @@ export async function PATCH(req: Request) {
 
     const changes: string[] = [];
 
-    if (name?.trim() && name.trim() !== user.name) {
-      user.name = name.trim();
-      changes.push("name");
-    }
     if (pincode !== undefined) {
       if (pincode && !/^\d{6}$/.test(pincode)) {
         return NextResponse.json({ error: "Pincode must be 6 digits" }, { status: 400 });
