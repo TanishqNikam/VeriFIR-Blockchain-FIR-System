@@ -15,6 +15,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const SESSION_KEY = "verifir_user"
+const LOGGED_OUT_KEY = "verifir_logged_out"
 const storage = typeof window !== "undefined" ? window.sessionStorage : null
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -32,6 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const restore = async () => {
       try {
+        // If the user explicitly logged out in this browser, skip the /api/auth/me
+        // check entirely — prevents a race where the browser hasn't yet processed
+        // the cleared cookie before the new page request fires.
+        if (storage?.getItem(LOGGED_OUT_KEY)) {
+          storage?.removeItem(LOGGED_OUT_KEY)
+          return
+        }
         const stored = storage?.getItem(SESSION_KEY)
         if (stored) {
           setUser(JSON.parse(stored))
@@ -68,12 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData: User = await res.json()
     setUser(userData)
     storage?.setItem(SESSION_KEY, JSON.stringify(userData))
+    storage?.removeItem(LOGGED_OUT_KEY)
     return true
   }, [])
 
   const logout = useCallback(async () => {
     setUser(null)
     storage?.removeItem(SESSION_KEY)
+    // Set a flag so the next page load knows not to call /api/auth/me.
+    // This guards against the race where the browser hasn't finished processing
+    // the cleared Set-Cookie header before the new page fires /api/auth/me.
+    storage?.setItem(LOGGED_OUT_KEY, "1")
     // Await the cookie-clearing API call so the cookie is gone BEFORE any navigation.
     // If we fire-and-forget, the middleware still sees the cookie during the redirect
     // and bounces the user back to the dashboard, causing a blank page loop.
