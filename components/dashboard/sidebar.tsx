@@ -3,11 +3,22 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Shield, LogOut, X } from "lucide-react"
+import { Shield, LogOut, X, KeyRound, Loader2, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth-context"
 import type { LucideIcon } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/language-context"
+import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 export interface NavItem {
   label: string
@@ -26,6 +37,46 @@ export function DashboardSidebar({ navItems, roleLabel, mobileOpen, onMobileClos
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const { t } = useLanguage()
+  const { toast } = useToast()
+
+  const [showChangePw, setShowChangePw] = useState(false)
+  const [pwForm, setPwForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" })
+  const [showOld, setShowOld] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const handleChangePassword = async () => {
+    if (!pwForm.oldPassword || !pwForm.newPassword || !pwForm.confirmPassword) {
+      toast({ title: "Validation", description: "All fields are required.", variant: "destructive" })
+      return
+    }
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      toast({ title: "Validation", description: "New passwords do not match.", variant: "destructive" })
+      return
+    }
+    if (pwForm.newPassword.length < 8) {
+      toast({ title: "Validation", description: "New password must be at least 8 characters.", variant: "destructive" })
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword: pwForm.oldPassword, newPassword: pwForm.newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast({ title: "Password changed", description: "Your password has been updated successfully." })
+      setShowChangePw(false)
+      setPwForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to change password.", variant: "destructive" })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleLogout = async () => {
     // Await so the HTTP-only session cookie is cleared on the server BEFORE navigating.
@@ -96,14 +147,87 @@ export function DashboardSidebar({ navItems, roleLabel, mobileOpen, onMobileClos
           </ul>
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-sidebar-border">
+        {/* Logout + Change Password */}
+        <div className="p-4 border-t border-sidebar-border space-y-1">
+          <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => setShowChangePw(true)}>
+            <KeyRound className="mr-3 h-5 w-5" />
+            Change Password
+          </Button>
           <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={handleLogout}>
             <LogOut className="mr-3 h-5 w-5" />
             {t("sidebar.logout")}
           </Button>
         </div>
       </aside>
+
+      {/* Change Password Dialog */}
+      <Dialog open={showChangePw} onOpenChange={(open) => {
+        setShowChangePw(open)
+        if (!open) setPwForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label>Current Password</Label>
+              <div className="relative">
+                <Input
+                  type={showOld ? "text" : "password"}
+                  value={pwForm.oldPassword}
+                  onChange={(e) => setPwForm((p) => ({ ...p, oldPassword: e.target.value }))}
+                  placeholder="Enter current password"
+                  className="pr-10"
+                />
+                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowOld((v) => !v)}>
+                  {showOld ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>New Password</Label>
+              <div className="relative">
+                <Input
+                  type={showNew ? "text" : "password"}
+                  value={pwForm.newPassword}
+                  onChange={(e) => setPwForm((p) => ({ ...p, newPassword: e.target.value }))}
+                  placeholder="At least 8 characters"
+                  className="pr-10"
+                />
+                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowNew((v) => !v)}>
+                  {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Confirm New Password</Label>
+              <div className="relative">
+                <Input
+                  type={showConfirm ? "text" : "password"}
+                  value={pwForm.confirmPassword}
+                  onChange={(e) => setPwForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                  placeholder="Re-enter new password"
+                  className="pr-10"
+                />
+                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowConfirm((v) => !v)}>
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && (
+                <p className="text-xs text-destructive">Passwords do not match.</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangePw(false)}>Cancel</Button>
+            <Button onClick={handleChangePassword} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
