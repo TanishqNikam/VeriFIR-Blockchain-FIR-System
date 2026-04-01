@@ -23,9 +23,9 @@ export default function LoginPage() {
   const { t } = useLanguage()
 
   const roles = [
-    { id: "citizen" as UserRole, label: t("auth.citizen"), description: "File FIRs and track status", icon: User },
-    { id: "police" as UserRole, label: t("auth.policeOfficer"), description: "Verify and process FIRs", icon: BadgeCheck },
-    { id: "admin" as UserRole, label: t("auth.adminAuditor"), description: "System oversight and reports", icon: Settings },
+    { id: "citizen" as UserRole, label: t("auth.citizen"), description: t("auth.citizenDesc"), icon: User },
+    { id: "police" as UserRole, label: t("auth.policeOfficer"), description: t("auth.policeDesc"), icon: BadgeCheck },
+    { id: "admin" as UserRole, label: t("auth.adminAuditor"), description: t("auth.adminDesc"), icon: Settings },
   ]
 
   const [selectedRole, setSelectedRole] = useState<UserRole>("citizen")
@@ -39,8 +39,8 @@ export default function LoginPage() {
 
     if (!email || !password) {
       toast({
-        title: "Validation Error",
-        description: "Please enter both email and password.",
+        title: t("auth.validationError"),
+        description: t("auth.emailPasswordRequired"),
         variant: "destructive",
       })
       return
@@ -53,8 +53,8 @@ export default function LoginPage() {
 
       if (success) {
         toast({
-          title: "Login Successful",
-          description: `Welcome! Redirecting to ${selectedRole} dashboard...`,
+          title: t("auth.loginSuccess"),
+          description: t("auth.loginSuccess"),
         })
 
         const action = searchParams.get("action")
@@ -66,8 +66,8 @@ export default function LoginPage() {
       }
     } catch (err) {
       toast({
-        title: "Login Failed",
-        description: err instanceof Error ? err.message : "Invalid credentials. Please try again.",
+        title: t("auth.loginFailed"),
+        description: err instanceof Error ? err.message : t("auth.loginFailed"),
         variant: "destructive",
       })
     } finally {
@@ -155,7 +155,7 @@ export default function LoginPage() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">{t("auth.password")}</Label>
                   <a href="/forgot-password" className="text-xs text-primary hover:underline">
-                    Forgot password?
+                    {t("auth.forgotPassword")}
                   </a>
                 </div>
                 <div className="relative">
@@ -172,7 +172,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

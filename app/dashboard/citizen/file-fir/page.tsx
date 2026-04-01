@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
+import { useLanguage } from "@/lib/i18n/language-context"
 import {
   Upload, X, FileIcon, Loader2, CheckCircle, Copy, ExternalLink,
   ChevronRight, ChevronLeft, Plus, Trash2,
@@ -80,15 +81,6 @@ interface PropertyRow {
 
 // ── Step config ────────────────────────────────────────────────────────────────
 
-const STEPS = [
-  { id: 1, label: "Incident Details" },
-  { id: 2, label: "Offence" },
-  { id: 3, label: "Complainant" },
-  { id: 4, label: "Accused" },
-  { id: 5, label: "Narrative" },
-  { id: 6, label: "Evidence" },
-]
-
 // ── Helper components ──────────────────────────────────────────────────────────
 
 function SectionTitle({ num, title }: { num: string | number; title: string }) {
@@ -112,6 +104,16 @@ export default function FileFIRPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { user } = useAuth()
+  const { t } = useLanguage()
+
+  const STEPS = [
+    { id: 1, label: t("citizen.fileFir.stepIncidentDetails") },
+    { id: 2, label: t("citizen.fileFir.stepOffence") },
+    { id: 3, label: t("citizen.fileFir.stepComplainant") },
+    { id: 4, label: t("citizen.fileFir.stepAccused") },
+    { id: 5, label: t("citizen.fileFir.stepNarrative") },
+    { id: 6, label: t("citizen.fileFir.stepEvidence") },
+  ]
 
   const [step, setStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
@@ -297,11 +299,11 @@ export default function FileFIRPage() {
       if (!response.ok) throw new Error(data.details || data.error || "Server error")
 
       setResult(data as SubmissionResult)
-      toast({ title: "FIR Submitted Successfully", description: `FIR ${data.firId} has been recorded.` })
+      toast({ title: t("citizen.fileFir.firFiledTitle"), description: `FIR ${data.firId} ${t("citizen.fileFir.firRecorded")}` })
     } catch (error) {
       toast({
-        title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Unable to submit FIR. Please try again.",
+        title: t("citizen.fileFir.submissionFailed"),
+        description: error instanceof Error ? error.message : t("citizen.fileFir.submissionFailedDesc"),
         variant: "destructive",
       })
     } finally {
@@ -320,7 +322,7 @@ export default function FileFIRPage() {
       document.execCommand("copy")
       document.body.removeChild(el)
     }
-    toast({ title: "Copied", description: `${label} copied to clipboard.` })
+    toast({ title: t("common.copied"), description: `${label} copied to clipboard.` })
   }
 
   const handleCloseResult = () => {
@@ -334,9 +336,9 @@ export default function FileFIRPage() {
     <div className="space-y-6 max-w-3xl">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">File a First Information Report</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("citizen.fileFir.title")}</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          NCRB I.I.F.-I format · Under Section 173 B.N.S.S. · All details are encrypted and anchored on blockchain
+          {t("citizen.fileFir.pageDesc")}
         </p>
       </div>
 
@@ -371,25 +373,25 @@ export default function FileFIRPage() {
           {step === 1 && (
             <>
               <CardHeader>
-                <CardTitle>Incident Details</CardTitle>
-                <CardDescription>Occurrence of offence &amp; place of occurrence (FIR form sections 3 &amp; 5)</CardDescription>
+                <CardTitle>{t("citizen.fileFir.stepIncidentDetails")}</CardTitle>
+                <CardDescription>{t("citizen.fileFir.step1Desc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* District / Police Station */}
                 <div>
-                  <SectionTitle num="A" title="Police Station Information" />
+                  <SectionTitle num="A" title={t("citizen.fileFir.policeStationInfo")} />
                   <FieldRow className="sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="district">District</Label>
+                      <Label htmlFor="district">{t("citizen.fileFir.district")}</Label>
                       <Input id="district" placeholder="e.g. Ahmedabad" value={district} onChange={(e) => setDistrict(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="policeStation">Police Station (P.S.)</Label>
+                      <Label htmlFor="policeStation">{t("citizen.fileFir.policeStationLabel")}</Label>
                       <Input id="policeStation" placeholder="e.g. Navrangpura P.S." value={policeStation} onChange={(e) => setPoliceStation(e.target.value)} />
                     </div>
                   </FieldRow>
                   <div className="mt-4 space-y-2">
-                    <Label htmlFor="pincode">Area Pincode <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="pincode">{t("citizen.fileFir.areaPincode")} <span className="text-destructive">*</span></Label>
                     <Input
                       id="pincode"
                       placeholder="6-digit pincode of the incident area (e.g. 400001)"
@@ -399,20 +401,20 @@ export default function FileFIRPage() {
                       inputMode="numeric"
                       pattern="\d{6}"
                     />
-                    <p className="text-xs text-muted-foreground">Used to route your FIR to the jurisdictional police station.</p>
+                    <p className="text-xs text-muted-foreground">{t("citizen.fileFir.pincodeRouteHint")}</p>
                   </div>
                 </div>
 
                 {/* Dates & Times */}
                 <div>
-                  <SectionTitle num="B" title="Date &amp; Time of Occurrence" />
+                  <SectionTitle num="B" title={t("citizen.fileFir.dateTimeTitle")} />
                   <FieldRow className="sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="incidentDate">Date From <span className="text-destructive">*</span></Label>
+                      <Label htmlFor="incidentDate">{t("citizen.fileFir.dateFrom")} <span className="text-destructive">*</span></Label>
                       <Input id="incidentDate" type="date" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} onKeyDown={(e) => e.preventDefault()} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="incidentDateTo">Date To (if multi-day)</Label>
+                      <Label htmlFor="incidentDateTo">{t("citizen.fileFir.dateTo")}</Label>
                       <Input
                         id="incidentDateTo"
                         type="date"
@@ -422,7 +424,7 @@ export default function FileFIRPage() {
                         onChange={(e) => {
                           const val = e.target.value
                           if (val && incidentDate && val < incidentDate) {
-                            toast({ title: "Invalid Date", description: "End date cannot be before start date.", variant: "destructive" })
+                            toast({ title: t("citizen.fileFir.invalidDate"), description: t("citizen.fileFir.invalidDateDesc"), variant: "destructive" })
                             setIncidentDateTo("")
                             return
                           }
@@ -433,11 +435,11 @@ export default function FileFIRPage() {
                   </FieldRow>
                   <FieldRow className="sm:grid-cols-2 mt-4">
                     <div className="space-y-2">
-                      <Label htmlFor="incidentTimeFrom">Time From (approx.)</Label>
+                      <Label htmlFor="incidentTimeFrom">{t("citizen.fileFir.timeFrom")}</Label>
                       <Input id="incidentTimeFrom" type="time" value={incidentTimeFrom} onChange={(e) => setIncidentTimeFrom(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="incidentTimeTo">Time To (approx.)</Label>
+                      <Label htmlFor="incidentTimeTo">{t("citizen.fileFir.timeTo")}</Label>
                       <Input id="incidentTimeTo" type="time" value={incidentTimeTo} onChange={(e) => setIncidentTimeTo(e.target.value)} />
                     </div>
                   </FieldRow>
@@ -445,10 +447,10 @@ export default function FileFIRPage() {
 
                 {/* Place */}
                 <div>
-                  <SectionTitle num="C" title="Place of Occurrence" />
+                  <SectionTitle num="C" title={t("citizen.fileFir.placeTitle")} />
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="location">Area / Locality Name <span className="text-destructive">*</span></Label>
+                      <Label htmlFor="location">{t("citizen.fileFir.areaLocality")} <span className="text-destructive">*</span></Label>
                       <Input
                         id="location"
                         placeholder="e.g. Andheri West, Mumbai"
@@ -456,10 +458,10 @@ export default function FileFIRPage() {
                         onChange={(e) => setLocation(e.target.value)}
                         required
                       />
-                      <p className="text-xs text-muted-foreground">Short area name shown in FIR lists and search.</p>
+                      <p className="text-xs text-muted-foreground">{t("citizen.fileFir.areaLocalityHint")}</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="placeAddress">Full Address of Occurrence</Label>
+                      <Label htmlFor="placeAddress">{t("citizen.fileFir.fullAddress")}</Label>
                       <Textarea
                         id="placeAddress"
                         placeholder="Complete address: house no., street, landmark, area, city"
@@ -469,7 +471,7 @@ export default function FileFIRPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="distanceFromPS">Direction &amp; Distance from P.S.</Label>
+                      <Label htmlFor="distanceFromPS">{t("citizen.fileFir.directionDistance")}</Label>
                       <Input id="distanceFromPS" placeholder="e.g. West, 0.1 km" value={distanceFromPS} onChange={(e) => setDistanceFromPS(e.target.value)} />
                     </div>
                   </div>
@@ -482,12 +484,12 @@ export default function FileFIRPage() {
           {step === 2 && (
             <>
               <CardHeader>
-                <CardTitle>Offence Details</CardTitle>
-                <CardDescription>Applicable Acts &amp; Sections (FIR form section 2)</CardDescription>
+                <CardTitle>{t("citizen.fileFir.step2CardTitle")}</CardTitle>
+                <CardDescription>{t("citizen.fileFir.step2Desc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Brief Description of Offence <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="title">{t("citizen.fileFir.offenceDescLabel")} <span className="text-destructive">*</span></Label>
                   <Input
                     id="title"
                     placeholder="e.g. Theft of mobile phone, Assault, Cheating under IPC"
@@ -495,16 +497,16 @@ export default function FileFIRPage() {
                     onChange={(e) => setTitle(e.target.value)}
                     required
                   />
-                  <p className="text-xs text-muted-foreground">This appears as the FIR title in all views.</p>
+                  <p className="text-xs text-muted-foreground">{t("citizen.fileFir.offenceHint")}</p>
                 </div>
 
 
                 {/* Acts & Sections table */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <Label>Acts &amp; Sections Applied</Label>
+                    <Label>{t("citizen.fileFir.actsLabel")}</Label>
                     <Button type="button" variant="outline" size="sm" onClick={addActRow}>
-                      <Plus className="h-3 w-3 mr-1" /> Add Row
+                      <Plus className="h-3 w-3 mr-1" /> {t("citizen.fileFir.addRow")}
                     </Button>
                   </div>
                   <div className="rounded-lg border border-border overflow-hidden">
@@ -512,8 +514,8 @@ export default function FileFIRPage() {
                       <thead className="bg-muted">
                         <tr>
                           <th className="px-3 py-2 text-left font-medium text-muted-foreground w-8">S.No.</th>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">Act / Adhiniyam</th>
-                          <th className="px-3 py-2 text-left font-medium text-muted-foreground w-36">Sections (Kalam)</th>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.actAdhiniyam")}</th>
+                          <th className="px-3 py-2 text-left font-medium text-muted-foreground w-36">{t("citizen.fileFir.sectionsKalam")}</th>
                           <th className="px-3 py-2 w-8" />
                         </tr>
                       </thead>
@@ -550,7 +552,7 @@ export default function FileFIRPage() {
                     </table>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Common acts: Indian Penal Code 1860, Bharatiya Nyaya Sanhita 2023, Prevention of Corruption Act 1988, IT Act 2000
+                    {t("citizen.fileFir.commonActsHint")}
                   </p>
                 </div>
               </CardContent>
@@ -561,75 +563,75 @@ export default function FileFIRPage() {
           {step === 3 && (
             <>
               <CardHeader>
-                <CardTitle>Complainant / Informant Details</CardTitle>
-                <CardDescription>Your personal information (FIR form section 6) — name is pre-filled from your account</CardDescription>
+                <CardTitle>{t("citizen.fileFir.step3CardTitle")}</CardTitle>
+                <CardDescription>{t("citizen.fileFir.step3Desc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Name from session */}
                 <div className="rounded-lg bg-muted/50 border border-border px-4 py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-muted-foreground">Name (from your account)</p>
+                    <p className="text-xs text-muted-foreground">{t("citizen.fileFir.nameFromAccount")}</p>
                     <p className="font-medium">{user?.name}</p>
                   </div>
-                  <Badge variant="secondary">Auto-filled</Badge>
+                  <Badge variant="secondary">{t("citizen.fileFir.autoFilled")}</Badge>
                 </div>
 
                 <FieldRow className="sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="fathersName">Father&apos;s / Husband&apos;s Name</Label>
-                    <Input id="fathersName" placeholder="As per ID proof" value={fathersName} onChange={(e) => setFathersName(e.target.value)} />
+                    <Label htmlFor="fathersName">{t("citizen.fileFir.fathersHusbandName")}</Label>
+                    <Input id="fathersName" placeholder={t("citizen.fileFir.asPerIdProof")} value={fathersName} onChange={(e) => setFathersName(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dob">Date / Year of Birth</Label>
+                    <Label htmlFor="dob">{t("citizen.fileFir.dobYear")}</Label>
                     <Input id="dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
                   </div>
                 </FieldRow>
 
                 <FieldRow className="sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="nationality">Nationality</Label>
+                    <Label htmlFor="nationality">{t("citizen.fileFir.nationality")}</Label>
                     <Input id="nationality" value={nationality} onChange={(e) => setNationality(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="occupation">Occupation</Label>
+                    <Label htmlFor="occupation">{t("citizen.fileFir.occupation")}</Label>
                     <Input id="occupation" placeholder="e.g. Farmer, Engineer, Student" value={occupation} onChange={(e) => setOccupation(e.target.value)} />
                   </div>
                 </FieldRow>
 
                 <FieldRow className="sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="mobile">Mobile Number</Label>
+                    <Label htmlFor="mobile">{t("citizen.fileFir.mobileNumber")}</Label>
                     <Input id="mobile" type="tel" placeholder="10-digit mobile" value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="uid">UID (Aadhaar No.)</Label>
+                    <Label htmlFor="uid">{t("citizen.fileFir.uidLabel")}</Label>
                     <Input id="uid" placeholder="12-digit Aadhaar" value={uid} onChange={(e) => setUid(e.target.value.replace(/\D/g, "").slice(0, 12))} inputMode="numeric" />
                   </div>
                 </FieldRow>
 
                 {/* ID Proof */}
                 <div>
-                  <Label className="mb-3 block">ID Proof Details</Label>
+                  <Label className="mb-3 block">{t("citizen.fileFir.idProofDetails")}</Label>
                   <FieldRow className="sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="idProofType">ID Type</Label>
+                      <Label htmlFor="idProofType">{t("citizen.fileFir.idType")}</Label>
                       <select
                         id="idProofType"
                         value={idProofType}
                         onChange={(e) => setIdProofType(e.target.value)}
                         className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
-                        <option value="">Select ID type</option>
-                        <option>Aadhaar Card</option>
-                        <option>Voter ID Card</option>
-                        <option>PAN Card</option>
-                        <option>Passport</option>
-                        <option>Driving License</option>
-                        <option>Ration Card</option>
+                        <option value="">{t("citizen.fileFir.selectIdType")}</option>
+                        <option>{t("citizen.fileFir.idAadhaar")}</option>
+                        <option>{t("citizen.fileFir.idVoter")}</option>
+                        <option>{t("citizen.fileFir.idPan")}</option>
+                        <option>{t("citizen.fileFir.idPassport")}</option>
+                        <option>{t("citizen.fileFir.idDriving")}</option>
+                        <option>{t("citizen.fileFir.idRation")}</option>
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="idProofNumber">ID Number</Label>
+                      <Label htmlFor="idProofNumber">{t("citizen.fileFir.idNumber")}</Label>
                       <Input id="idProofNumber" placeholder="ID card number" value={idProofNumber} onChange={(e) => setIdProofNumber(e.target.value)} />
                     </div>
                   </FieldRow>
@@ -638,16 +640,16 @@ export default function FileFIRPage() {
                 {/* Addresses */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="currentAddress">Current Address (वर्तमान पत्ता)</Label>
+                    <Label htmlFor="currentAddress">{t("citizen.fileFir.currentAddress")}</Label>
                     <Textarea id="currentAddress" placeholder="House No., Street, Area, City, State, PIN" value={currentAddress} onChange={(e) => setCurrentAddress(e.target.value)} rows={3} />
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer text-sm">
                     <input type="checkbox" checked={sameAddress} onChange={(e) => setSameAddress(e.target.checked)} className="accent-primary" />
-                    Permanent address same as current address
+                    {t("citizen.fileFir.sameAddressCheck")}
                   </label>
                   {!sameAddress && (
                     <div className="space-y-2">
-                      <Label htmlFor="permanentAddress">Permanent Address (स्थायी पत्ता)</Label>
+                      <Label htmlFor="permanentAddress">{t("citizen.fileFir.permanentAddress")}</Label>
                       <Textarea id="permanentAddress" placeholder="House No., Street, Area, City, State, PIN" value={permanentAddress} onChange={(e) => setPermanentAddress(e.target.value)} rows={3} />
                     </div>
                   )}
@@ -660,8 +662,8 @@ export default function FileFIRPage() {
           {step === 4 && (
             <>
               <CardHeader>
-                <CardTitle>Details of Accused / Suspected Person(s)</CardTitle>
-                <CardDescription>Known / suspected / unknown accused particulars (FIR form section 7)</CardDescription>
+                <CardTitle>{t("citizen.fileFir.step4CardTitle")}</CardTitle>
+                <CardDescription>{t("citizen.fileFir.step4Desc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <label className="flex items-center gap-2 cursor-pointer text-sm">
@@ -671,7 +673,7 @@ export default function FileFIRPage() {
                     onChange={(e) => setUnknownAccused(e.target.checked)}
                     className="accent-primary"
                   />
-                  Accused is unknown / unidentified
+                  {t("citizen.fileFir.accusedUnknown")}
                 </label>
 
                 {!unknownAccused && (
@@ -681,10 +683,10 @@ export default function FileFIRPage() {
                         <thead className="bg-muted">
                           <tr>
                             <th className="px-3 py-2 text-left font-medium text-muted-foreground w-8">S.No.</th>
-                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Name</th>
-                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Alias</th>
-                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Relative&apos;s Name</th>
-                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Present Address</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.accusedName")}</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.accusedAlias")}</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.accusedRelativeName")}</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.accusedAddress")}</th>
                             <th className="px-3 py-2 w-8" />
                           </tr>
                         </thead>
@@ -717,7 +719,7 @@ export default function FileFIRPage() {
                       </table>
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={addAccusedRow}>
-                      <Plus className="h-3 w-3 mr-1" /> Add Accused
+                      <Plus className="h-3 w-3 mr-1" /> {t("citizen.fileFir.addAccused")}
                     </Button>
                   </div>
                 )}
@@ -729,17 +731,17 @@ export default function FileFIRPage() {
           {step === 5 && (
             <>
               <CardHeader>
-                <CardTitle>First Information Contents</CardTitle>
-                <CardDescription>Your complaint narrative, delay reason, and property involved (FIR form sections 8, 9 &amp; 12)</CardDescription>
+                <CardTitle>{t("citizen.fileFir.step5CardTitle")}</CardTitle>
+                <CardDescription>{t("citizen.fileFir.step5Desc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Narrative */}
                 <div>
-                  <SectionTitle num={12} title="First Information Contents" />
+                  <SectionTitle num={12} title={t("citizen.fileFir.step5CardTitle")} />
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Narrative <span className="text-destructive">*</span></Label>
+                    <Label className="text-sm font-medium">{t("citizen.fileFir.narrativeLabel")} <span className="text-destructive">*</span></Label>
                     <Textarea
-                      placeholder="Write your complete complaint here — describe what happened, when, where, and who was involved. Be as detailed as possible. This is the core of your FIR and will be verified by the police officer."
+                      placeholder={t("citizen.fileFir.narrativePlaceholder")}
                       className="min-h-48"
                       value={firstInformationContents}
                       onChange={(e) => setFirstInformationContents(e.target.value)}
@@ -751,9 +753,9 @@ export default function FileFIRPage() {
 
                 {/* Delay reason */}
                 <div>
-                  <SectionTitle num={8} title="Reasons for Delay in Reporting (if any)" />
+                  <SectionTitle num={8} title={t("citizen.fileFir.delayReasonLabel")} />
                   <Textarea
-                    placeholder="If there was a delay in reporting this incident, explain the reason here. Leave blank if reporting promptly."
+                    placeholder={t("citizen.fileFir.delayReasonPlaceholder")}
                     rows={3}
                     value={delayReason}
                     onChange={(e) => setDelayReason(e.target.value)}
@@ -762,7 +764,7 @@ export default function FileFIRPage() {
 
                 {/* Property details */}
                 <div>
-                  <SectionTitle num={9} title="Particulars of Properties of Interest" />
+                  <SectionTitle num={9} title={t("citizen.fileFir.propertyTitle")} />
                   <div className="space-y-4">
                     {properties.length > 0 && (
                       <div className="rounded-lg border border-border overflow-x-auto">
@@ -770,10 +772,10 @@ export default function FileFIRPage() {
                           <thead className="bg-muted">
                             <tr>
                               <th className="px-3 py-2 text-left font-medium text-muted-foreground w-8">S.No.</th>
-                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Category</th>
-                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Type</th>
-                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
-                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Value (₹)</th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.propertyCategory")}</th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.propertyType")}</th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.propertyDescCol")}</th>
+                              <th className="px-3 py-2 text-left font-medium text-muted-foreground">{t("citizen.fileFir.propertyValue")}</th>
                               <th className="px-3 py-2 w-8" />
                             </tr>
                           </thead>
@@ -784,11 +786,11 @@ export default function FileFIRPage() {
                                 <td className="px-3 py-2">
                                   <select value={row.category} onChange={(e) => updateProperty(i, "category", e.target.value)}
                                     className="h-8 rounded border border-input bg-background px-2 text-xs min-w-[100px]">
-                                    <option value="">Select</option>
-                                    <option>Movable</option>
-                                    <option>Immovable</option>
-                                    <option>Documents</option>
-                                    <option>Electronic</option>
+                                    <option value="">{t("common.select")}</option>
+                                    <option>{t("citizen.fileFir.propMovable")}</option>
+                                    <option>{t("citizen.fileFir.propImmovable")}</option>
+                                    <option>{t("citizen.fileFir.propDocuments")}</option>
+                                    <option>{t("citizen.fileFir.propElectronic")}</option>
                                   </select>
                                 </td>
                                 <td className="px-3 py-2">
@@ -811,7 +813,7 @@ export default function FileFIRPage() {
                           {properties.length > 0 && (
                             <tfoot className="border-t border-border bg-muted/50">
                               <tr>
-                                <td colSpan={4} className="px-3 py-2 text-right text-sm font-medium">Total Value (₹)</td>
+                                <td colSpan={4} className="px-3 py-2 text-right text-sm font-medium">{t("citizen.fileFir.totalValue")}</td>
                                 <td className="px-3 py-2 font-bold text-sm">{totalPropertyValue.toLocaleString("en-IN")}</td>
                                 <td />
                               </tr>
@@ -821,7 +823,7 @@ export default function FileFIRPage() {
                       </div>
                     )}
                     <Button type="button" variant="outline" size="sm" onClick={addPropertyRow}>
-                      <Plus className="h-3 w-3 mr-1" /> Add Property
+                      <Plus className="h-3 w-3 mr-1" /> {t("citizen.fileFir.addProperty")}
                     </Button>
                   </div>
                 </div>
@@ -833,16 +835,16 @@ export default function FileFIRPage() {
           {step === 6 && (
             <>
               <CardHeader>
-                <CardTitle>Evidence Files</CardTitle>
-                <CardDescription>Upload photos, videos, documents or other evidence. Files are stored on IPFS and their CIDs are anchored on the blockchain.</CardDescription>
+                <CardTitle>{t("citizen.fileFir.step6CardTitle")}</CardTitle>
+                <CardDescription>{t("citizen.fileFir.step6Desc")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-col items-center rounded-lg border-2 border-dashed border-border p-8">
                   <Upload className="h-10 w-10 text-muted-foreground" />
                   <p className="mt-2 text-sm text-muted-foreground text-center">
-                    Drag &amp; drop or click to select files
+                    {t("citizen.fileFir.dragDropText")}
                     <br />
-                    <span className="text-xs">Accepted: JPEG, PNG, PDF, MP4, MOV — max 10MB each</span>
+                    <span className="text-xs">{t("citizen.fileFir.acceptedFilesText")}</span>
                   </p>
                   <input
                     type="file"
@@ -858,7 +860,7 @@ export default function FileFIRPage() {
                     className="mt-4"
                     onClick={() => document.getElementById("file-upload")?.click()}
                   >
-                    Select Files
+                    {t("citizen.fileFir.selectFiles")}
                   </Button>
                 </div>
 
@@ -883,15 +885,15 @@ export default function FileFIRPage() {
 
                 {/* Summary before submission */}
                 <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-2 text-sm">
-                  <p className="font-medium text-foreground">Review Summary</p>
+                  <p className="font-medium text-foreground">{t("citizen.fileFir.reviewSummary")}</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>Offence:</span><span className="text-foreground font-medium truncate">{title || "—"}</span>
-                    <span>Date:</span><span className="text-foreground">{incidentDate || "—"}{incidentDateTo ? ` → ${incidentDateTo}` : ""}</span>
-                    <span>Location:</span><span className="text-foreground">{location || "—"}</span>
-                    <span>Pincode:</span><span className="text-foreground">{pincode || "—"}</span>
-                    <span>Acts:</span><span className="text-foreground">{acts.filter(a => a.act).length} act(s)</span>
-                    <span>Accused:</span><span className="text-foreground">{unknownAccused ? "Unknown" : `${accused.filter(a => a.name).length} person(s)`}</span>
-                    <span>Evidence files:</span><span className="text-foreground">{files.length} file(s)</span>
+                    <span>{t("citizen.fileFir.reviewOffence")}</span><span className="text-foreground font-medium truncate">{title || "—"}</span>
+                    <span>{t("citizen.fileFir.reviewDate")}</span><span className="text-foreground">{incidentDate || "—"}{incidentDateTo ? ` → ${incidentDateTo}` : ""}</span>
+                    <span>{t("citizen.fileFir.reviewLocation")}</span><span className="text-foreground">{location || "—"}</span>
+                    <span>{t("citizen.fileFir.reviewPincode")}</span><span className="text-foreground">{pincode || "—"}</span>
+                    <span>{t("citizen.fileFir.reviewActs")}</span><span className="text-foreground">{acts.filter(a => a.act).length} act(s)</span>
+                    <span>{t("citizen.fileFir.reviewAccused")}</span><span className="text-foreground">{unknownAccused ? t("citizen.fileFir.reviewUnknown") : `${accused.filter(a => a.name).length} person(s)`}</span>
+                    <span>{t("citizen.fileFir.reviewEvidence")}</span><span className="text-foreground">{files.length} file(s)</span>
                   </div>
                 </div>
               </CardContent>
@@ -902,19 +904,19 @@ export default function FileFIRPage() {
           <div className="flex items-center justify-between px-6 pb-6 pt-2">
             <Button type="button" variant="outline" onClick={step === 1 ? () => router.back() : prevStep}>
               <ChevronLeft className="h-4 w-4 mr-1" />
-              {step === 1 ? "Cancel" : "Previous"}
+              {step === 1 ? t("citizen.fileFir.cancel") : t("citizen.fileFir.previous")}
             </Button>
 
             {step < STEPS.length ? (
               <Button type="button" onClick={nextStep}>
-                Next <ChevronRight className="h-4 w-4 ml-1" />
+                {t("common.next")} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             ) : (
               <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting FIR…</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("citizen.fileFir.submittingFir")}</>
                 ) : (
-                  "Submit FIR"
+                  t("citizen.fileFir.submit")
                 )}
               </Button>
             )}
@@ -928,22 +930,22 @@ export default function FileFIRPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              FIR Filed Successfully
+              {t("citizen.fileFir.firFiledTitle")}
             </DialogTitle>
             <DialogDescription>
-              Your FIR has been recorded and anchored on the blockchain. Keep the FIR ID safe for future reference.
+              {t("citizen.fileFir.firFiledDesc")}
             </DialogDescription>
           </DialogHeader>
 
           {result && (
             <div className="space-y-4">
               <div className="rounded-lg bg-secondary p-3">
-                <p className="text-xs text-muted-foreground mb-1">FIR Number</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("citizen.fileFir.firNumber")}</p>
                 <p className="font-mono font-semibold text-foreground text-lg">{result.firId}</p>
               </div>
 
               <div className="rounded-lg bg-secondary p-3">
-                <p className="text-xs text-muted-foreground mb-1">Blockchain Transaction Hash</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("citizen.fileFir.txHashLabel")}</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs break-all">{result.txHash}</code>
                   <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(result.txHash, "Tx Hash")}>
@@ -954,7 +956,7 @@ export default function FileFIRPage() {
               </div>
 
               <div className="rounded-lg bg-secondary p-3">
-                <p className="text-xs text-muted-foreground mb-1">IPFS Content Identifier (CID)</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("citizen.fileFir.ipfsCidFull")}</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs break-all">{result.ipfsCid}</code>
                   <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => copyToClipboard(result.ipfsCid, "IPFS CID")}>
@@ -967,17 +969,17 @@ export default function FileFIRPage() {
               </div>
 
               <div className="rounded-lg bg-secondary p-3">
-                <p className="text-xs text-muted-foreground mb-1">Integrity Hash (SHA-256)</p>
+                <p className="text-xs text-muted-foreground mb-1">{t("citizen.fileFir.integrityHash")}</p>
                 <code className="text-xs break-all">{result.storedHash}</code>
               </div>
 
               {result.evidenceCount > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  {result.evidenceCount} evidence file{result.evidenceCount > 1 ? "s" : ""} uploaded to IPFS.
+                  {result.evidenceCount} {t("citizen.fileFir.evidenceUploadedText")}
                 </p>
               )}
 
-              <Button onClick={handleCloseResult} className="w-full">View My FIRs</Button>
+              <Button onClick={handleCloseResult} className="w-full">{t("citizen.fileFir.viewMyFirs")}</Button>
             </div>
           )}
         </DialogContent>

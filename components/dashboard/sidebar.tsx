@@ -48,15 +48,15 @@ export function DashboardSidebar({ navItems, roleLabel, mobileOpen, onMobileClos
 
   const handleChangePassword = async () => {
     if (!pwForm.oldPassword || !pwForm.newPassword || !pwForm.confirmPassword) {
-      toast({ title: "Validation", description: "All fields are required.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("sidebar.allFieldsRequired"), variant: "destructive" })
       return
     }
     if (pwForm.newPassword !== pwForm.confirmPassword) {
-      toast({ title: "Validation", description: "New passwords do not match.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("sidebar.passwordsNotMatch"), variant: "destructive" })
       return
     }
     if (pwForm.newPassword.length < 8) {
-      toast({ title: "Validation", description: "New password must be at least 8 characters.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("sidebar.passwordMinLength"), variant: "destructive" })
       return
     }
     setSaving(true)
@@ -68,7 +68,7 @@ export function DashboardSidebar({ navItems, roleLabel, mobileOpen, onMobileClos
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast({ title: "Password changed", description: "Your password has been updated successfully." })
+      toast({ title: t("sidebar.passwordChanged"), description: t("sidebar.passwordUpdated") })
       setShowChangePw(false)
       setPwForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
     } catch (e) {
@@ -151,7 +151,7 @@ export function DashboardSidebar({ navItems, roleLabel, mobileOpen, onMobileClos
         <div className="p-4 border-t border-sidebar-border space-y-1">
           <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => setShowChangePw(true)}>
             <KeyRound className="mr-3 h-5 w-5" />
-            Change Password
+            {t("sidebar.changePassword")}
           </Button>
           <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={handleLogout}>
             <LogOut className="mr-3 h-5 w-5" />
@@ -167,63 +167,63 @@ export function DashboardSidebar({ navItems, roleLabel, mobileOpen, onMobileClos
       }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Change Password</DialogTitle>
+            <DialogTitle>{t("sidebar.changePassword")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label>Current Password</Label>
+              <Label>{t("sidebar.currentPassword")}</Label>
               <div className="relative">
                 <Input
                   type={showOld ? "text" : "password"}
                   value={pwForm.oldPassword}
                   onChange={(e) => setPwForm((p) => ({ ...p, oldPassword: e.target.value }))}
-                  placeholder="Enter current password"
+                  placeholder={t("sidebar.enterCurrentPassword")}
                   className="pr-10"
                 />
-                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowOld((v) => !v)}>
+                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" aria-label={showOld ? t("sidebar.hidePassword") : t("sidebar.showPassword")} onClick={() => setShowOld((v) => !v)}>
                   {showOld ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
             <div className="space-y-1">
-              <Label>New Password</Label>
+              <Label>{t("sidebar.newPassword")}</Label>
               <div className="relative">
                 <Input
                   type={showNew ? "text" : "password"}
                   value={pwForm.newPassword}
                   onChange={(e) => setPwForm((p) => ({ ...p, newPassword: e.target.value }))}
-                  placeholder="At least 8 characters"
+                  placeholder={t("sidebar.atLeast8Chars")}
                   className="pr-10"
                 />
-                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowNew((v) => !v)}>
+                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" aria-label={showNew ? t("sidebar.hidePassword") : t("sidebar.showPassword")} onClick={() => setShowNew((v) => !v)}>
                   {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
             <div className="space-y-1">
-              <Label>Confirm New Password</Label>
+              <Label>{t("sidebar.confirmNewPassword")}</Label>
               <div className="relative">
                 <Input
                   type={showConfirm ? "text" : "password"}
                   value={pwForm.confirmPassword}
                   onChange={(e) => setPwForm((p) => ({ ...p, confirmPassword: e.target.value }))}
-                  placeholder="Re-enter new password"
+                  placeholder={t("sidebar.reEnterNewPassword")}
                   className="pr-10"
                 />
-                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowConfirm((v) => !v)}>
+                <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" aria-label={showConfirm ? t("sidebar.hidePassword") : t("sidebar.showPassword")} onClick={() => setShowConfirm((v) => !v)}>
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && (
-                <p className="text-xs text-destructive">Passwords do not match.</p>
+                <p className="text-xs text-destructive">{t("sidebar.passwordsNotMatch")}</p>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowChangePw(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowChangePw(false)}>{t("common.cancel")}</Button>
             <Button onClick={handleChangePassword} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update Password
+              {t("sidebar.updatePassword")}
             </Button>
           </DialogFooter>
         </DialogContent>

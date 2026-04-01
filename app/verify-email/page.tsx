@@ -10,11 +10,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { Shield, Mail, Loader2, CheckCircle } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageToggle } from "@/components/language-toggle"
+import { useLanguage } from "@/lib/i18n/language-context"
 
 function VerifyEmailForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   const emailFromQuery = searchParams.get("email") || ""
   const [otp, setOtp] = useState("")
@@ -33,7 +36,7 @@ function VerifyEmailForm() {
 
   const handleVerify = async () => {
     if (!otp.trim() || otp.length !== 6) {
-      toast({ title: "Invalid OTP", description: "Please enter the 6-digit OTP.", variant: "destructive" })
+      toast({ title: t("auth.invalidOtp"), description: t("auth.enter6DigitOtp"), variant: "destructive" })
       return
     }
     setIsVerifying(true)
@@ -49,8 +52,8 @@ function VerifyEmailForm() {
       setTimeout(() => router.push("/login"), 3000)
     } catch (err) {
       toast({
-        title: "Verification Failed",
-        description: err instanceof Error ? err.message : "Please try again.",
+        title: t("auth.verificationFailed"),
+        description: err instanceof Error ? err.message : t("auth.verificationFailed"),
         variant: "destructive",
       })
     } finally {
@@ -68,12 +71,12 @@ function VerifyEmailForm() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast({ title: "OTP Sent", description: "A new OTP has been sent to your email." })
+      toast({ title: t("auth.otpSent"), description: t("auth.newOtpSent") })
       setCountdown(60)
     } catch (err) {
       toast({
-        title: "Failed",
-        description: err instanceof Error ? err.message : "Could not resend OTP.",
+        title: t("auth.verificationFailed"),
+        description: err instanceof Error ? err.message : t("auth.couldNotResend"),
         variant: "destructive",
       })
     } finally {
@@ -90,12 +93,12 @@ function VerifyEmailForm() {
           </div>
         </div>
         <CardTitle className="text-2xl">
-          {verified ? "Email Verified!" : "Verify Your Email"}
+          {verified ? t("auth.emailVerified") : t("auth.verifyYourEmail")}
         </CardTitle>
         <CardDescription>
           {verified
-            ? "Your account is verified. Redirecting to login..."
-            : `We sent a 6-digit OTP to ${email || "your email"}. Enter it below to activate your account.`}
+            ? t("auth.redirectingLogin")
+            : t("auth.otpSentDesc")}
         </CardDescription>
       </CardHeader>
       {!verified && (

@@ -32,7 +32,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!name || !email || !password || !gender || !phone || !aadhaar || !dateOfBirth) {
-      toast({ title: "Validation Error", description: "Please fill in all fields.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("auth.fillAllFields"), variant: "destructive" })
       return
     }
 
@@ -47,12 +47,12 @@ export default function RegisterPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Registration failed")
 
-      toast({ title: "Account Created", description: "Please check your email for a verification OTP." })
+      toast({ title: t("auth.accountCreated"), description: t("auth.checkEmailOtp") })
       router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     } catch (err) {
       toast({
-        title: "Registration Failed",
-        description: err instanceof Error ? err.message : "Please try again.",
+        title: t("auth.registrationFailed"),
+        description: err instanceof Error ? err.message : t("auth.registrationFailed"),
         variant: "destructive",
       })
     } finally {
@@ -98,11 +98,11 @@ export default function RegisterPage() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">{t("auth.citizen")}</p>
-                  <p className="text-xs text-muted-foreground">File FIRs and track their status</p>
+                  <p className="text-xs text-muted-foreground">{t("auth.citizenTrack")}</p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground rounded-lg bg-secondary px-3 py-2">
-                Police and admin accounts are issued by system administrators only.
+                {t("auth.adminPoliceNote")}
               </p>
 
               <div className="space-y-2">
@@ -121,7 +121,7 @@ export default function RegisterPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Minimum 8 characters"
+                    placeholder={t("auth.minPassword")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pr-10"
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -139,25 +139,25 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender">{t("auth.gender")}</Label>
                 <Select onValueChange={setGender} required>
                   <SelectTrigger id="gender">
-                    <SelectValue placeholder="Select gender" />
+                    <SelectValue placeholder={t("auth.selectGender")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="male">{t("auth.male")}</SelectItem>
+                    <SelectItem value="female">{t("auth.female")}</SelectItem>
+                    <SelectItem value="other">{t("auth.other")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">{t("auth.phone")}</Label>
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="10-digit mobile number"
+                  placeholder={t("auth.phonePlaceholder")}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   inputMode="numeric"
@@ -166,20 +166,20 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="aadhaar">Aadhaar Number</Label>
+                <Label htmlFor="aadhaar">{t("auth.aadhaar")}</Label>
                 <Input
                   id="aadhaar"
-                  placeholder="12-digit Aadhaar number"
+                  placeholder={t("auth.aadhaarPlaceholder")}
                   value={aadhaar}
                   onChange={(e) => setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12))}
                   inputMode="numeric"
                   required
                 />
-                <p className="text-xs text-muted-foreground">Only the last 4 digits will be stored for privacy.</p>
+                <p className="text-xs text-muted-foreground">{t("auth.aadhaarPrivacy")}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth</Label>
+                <Label htmlFor="dob">{t("auth.dateOfBirth")}</Label>
                 <Input
                   id="dob"
                   type="date"

@@ -60,14 +60,14 @@ export default function MyFIRsPage() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-44">
-                <SelectValue placeholder="All statuses" />
+                <SelectValue placeholder={t("citizen.myFirs.allStatuses")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="under-verification">Under Review</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="all">{t("citizen.myFirs.allStatuses")}</SelectItem>
+                <SelectItem value="pending">{t("status.pending")}</SelectItem>
+                <SelectItem value="under-verification">{t("status.underVerification")}</SelectItem>
+                <SelectItem value="verified">{t("status.verified")}</SelectItem>
+                <SelectItem value="rejected">{t("status.rejected")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

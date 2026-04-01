@@ -65,7 +65,7 @@ export default function AdminDashboardPage() {
           <div className="text-sm">
             <span className="font-semibold text-foreground">{onChainCount}</span>
             <span className="text-muted-foreground ml-1">
-              FIR{onChainCount !== 1 ? "s" : ""} anchored on the FIRRegistry smart contract
+              FIR{onChainCount !== 1 ? "s" : ""} {t("admin.dashboard.onChainAnchored")}
             </span>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             {recentLogs.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No on-chain events yet. Start the Hardhat node to see live data.
+                {t("admin.dashboard.noOnChainEvents")}
               </p>
             ) : (
               <div className="space-y-3">

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Plus, Pencil, Trash2, Search, UserCheck } from "lucide-react"
+import { useLanguage } from "@/lib/i18n/language-context"
 
 type UserRole = "citizen" | "police" | "admin"
 
@@ -45,6 +46,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
 
 export default function AdminUsersPage() {
   const { toast } = useToast()
+  const { t } = useLanguage()
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -76,7 +78,7 @@ export default function AdminUsersPage() {
       const data = await res.json()
       setUsers(data.users)
     } catch {
-      toast({ title: "Error", description: "Failed to load users.", variant: "destructive" })
+      toast({ title: t("common.error"), description: t("admin.users.loadError"), variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -93,15 +95,15 @@ export default function AdminUsersPage() {
   // ── Create ──────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!createForm.name || !createForm.email || !createForm.password) {
-      toast({ title: "Validation", description: "Name, email, and password are required.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("auth.fillAllFields"), variant: "destructive" })
       return
     }
     if (createForm.password !== createForm.confirmPassword) {
-      toast({ title: "Validation", description: "Passwords do not match.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("admin.users.passwordMismatch"), variant: "destructive" })
       return
     }
     if (createForm.role === "police" && createForm.pincode && !/^\d{6}$/.test(createForm.pincode)) {
-      toast({ title: "Validation", description: "Pincode must be 6 digits.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("admin.users.pincodeInvalid"), variant: "destructive" })
       return
     }
     setCreating(true)
@@ -113,12 +115,12 @@ export default function AdminUsersPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast({ title: "User created", description: `${data.user.userId} created successfully.` })
+      toast({ title: t("admin.users.userCreated"), description: `${data.user.userId} ${t("admin.users.userCreatedDesc")}` })
       setShowCreate(false)
       setCreateForm({ name: "", email: "", password: "", confirmPassword: "", role: "citizen", pincode: "", walletAddress: "", badgeNumber: "", policeStation: "" })
       fetchUsers()
     } catch (e) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to create user.", variant: "destructive" })
+      toast({ title: t("common.error"), description: e instanceof Error ? e.message : t("admin.users.createError"), variant: "destructive" })
     } finally {
       setCreating(false)
     }
@@ -141,11 +143,11 @@ export default function AdminUsersPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast({ title: "Saved", description: "User updated." })
+      toast({ title: t("common.saved"), description: t("admin.users.userUpdated") })
       setEditUser(null)
       fetchUsers()
     } catch (e) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to save.", variant: "destructive" })
+      toast({ title: t("common.error"), description: e instanceof Error ? e.message : t("admin.users.saveError"), variant: "destructive" })
     } finally {
       setSaving(false)
     }
@@ -159,11 +161,11 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/admin/users?id=${deleteTarget.userId}`, { method: "DELETE" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast({ title: "Deleted", description: `User ${deleteTarget.userId} removed.` })
+      toast({ title: t("common.deleted"), description: t("admin.users.deletedDesc") })
       setDeleteTarget(null)
       fetchUsers()
     } catch (e) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to delete.", variant: "destructive" })
+      toast({ title: t("common.error"), description: e instanceof Error ? e.message : t("admin.users.deleteError"), variant: "destructive" })
     } finally {
       setDeleting(false)
     }
@@ -173,11 +175,11 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Create and manage citizens, police officers, and admins.</p>
+          <h1 className="text-2xl font-bold">{t("admin.users.title")}</h1>
+          <p className="text-muted-foreground">{t("admin.users.desc")}</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add User
+          <Plus className="mr-2 h-4 w-4" /> {t("admin.users.addUser")}
         </Button>
       </div>
 
@@ -186,7 +188,7 @@ export default function AdminUsersPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, email, or ID…"
+            placeholder={t("admin.users.searchPlaceholder")}
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -194,13 +196,13 @@ export default function AdminUsersPage() {
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All roles" />
+            <SelectValue placeholder={t("admin.users.allRoles")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All roles</SelectItem>
-            <SelectItem value="citizen">Citizen</SelectItem>
-            <SelectItem value="police">Police</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="all">{t("admin.users.allRoles")}</SelectItem>
+            <SelectItem value="citizen">{t("auth.citizen")}</SelectItem>
+            <SelectItem value="police">{t("admin.users.rolePolice")}</SelectItem>
+            <SelectItem value="admin">{t("auth.adminAuditor")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -219,18 +221,18 @@ export default function AdminUsersPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">No users found.</p>
+            <p className="text-center py-8 text-muted-foreground">{t("admin.users.noUsers")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground text-xs uppercase">
-                    <th className="text-left py-2 pr-4">Name / Email</th>
-                    <th className="text-left py-2 pr-4">ID</th>
-                    <th className="text-left py-2 pr-4">Role</th>
-                    <th className="text-left py-2 pr-4">Pincode</th>
-                    <th className="text-left py-2 pr-4">Created</th>
-                    <th className="text-right py-2">Actions</th>
+                    <th className="text-left py-2 pr-4">{t("admin.users.colNameEmail")}</th>
+                    <th className="text-left py-2 pr-4">{t("admin.users.colId")}</th>
+                    <th className="text-left py-2 pr-4">{t("admin.users.colRole")}</th>
+                    <th className="text-left py-2 pr-4">{t("admin.users.colPincode")}</th>
+                    <th className="text-left py-2 pr-4">{t("admin.users.colCreated")}</th>
+                    <th className="text-right py-2">{t("common.actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -278,72 +280,72 @@ export default function AdminUsersPage() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
+            <DialogTitle>{t("admin.users.addNewUser")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label>Name *</Label>
-              <Input value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} placeholder="Full name" />
+              <Label>{t("auth.fullName")} *</Label>
+              <Input value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} placeholder={t("admin.users.fullNamePlaceholder")} />
             </div>
             <div className="space-y-1">
-              <Label>Email *</Label>
+              <Label>{t("auth.email")} *</Label>
               <Input type="email" value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} placeholder="user@example.com" />
             </div>
             <div className="space-y-1">
-              <Label>Password *</Label>
-              <Input type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} placeholder="Temporary password" />
+              <Label>{t("auth.password")} *</Label>
+              <Input type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} placeholder={t("admin.users.tempPassword")} />
             </div>
             <div className="space-y-1">
-              <Label>Re-type Password *</Label>
-              <Input type="password" value={createForm.confirmPassword} onChange={(e) => setCreateForm((p) => ({ ...p, confirmPassword: e.target.value }))} placeholder="Confirm password" />
+              <Label>{t("admin.users.reTypePassword")} *</Label>
+              <Input type="password" value={createForm.confirmPassword} onChange={(e) => setCreateForm((p) => ({ ...p, confirmPassword: e.target.value }))} placeholder={t("admin.users.confirmPasswordPlaceholder")} />
               {createForm.confirmPassword && createForm.password !== createForm.confirmPassword && (
-                <p className="text-xs text-destructive">Passwords do not match.</p>
+                <p className="text-xs text-destructive">{t("admin.users.passwordMismatch")}</p>
               )}
             </div>
             <div className="space-y-1">
-              <Label>Role *</Label>
+              <Label>{t("admin.users.roleLbl")} *</Label>
               <Select value={createForm.role} onValueChange={(v) => setCreateForm((p) => ({ ...p, role: v as UserRole }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="citizen">Citizen</SelectItem>
-                  <SelectItem value="police">Police Officer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="citizen">{t("auth.citizen")}</SelectItem>
+                  <SelectItem value="police">{t("auth.policeOfficer")}</SelectItem>
+                  <SelectItem value="admin">{t("auth.adminAuditor")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {createForm.role === "police" && (
               <>
                 <div className="space-y-1">
-                  <Label>Jurisdiction Pincode</Label>
+                  <Label>{t("admin.users.jurisdictionPincode")}</Label>
                   <Input
                     value={createForm.pincode}
                     onChange={(e) => setCreateForm((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
-                    placeholder="6-digit area pincode"
+                    placeholder={t("admin.users.pincodePlaceholder")}
                     maxLength={6}
                     inputMode="numeric"
                   />
-                  <p className="text-xs text-muted-foreground">FIRs from this pincode area will be visible to this officer.</p>
+                  <p className="text-xs text-muted-foreground">{t("admin.users.pincodeHint")}</p>
                 </div>
                 <div className="space-y-1">
-                  <Label>Badge / Service Number</Label>
+                  <Label>{t("admin.users.badgeNumber")}</Label>
                   <Input value={createForm.badgeNumber} onChange={(e) => setCreateForm((p) => ({ ...p, badgeNumber: e.target.value }))} placeholder="e.g. MH-12345" />
                 </div>
                 <div className="space-y-1">
-                  <Label>Police Station</Label>
+                  <Label>{t("admin.users.policeStation")}</Label>
                   <Input value={createForm.policeStation} onChange={(e) => setCreateForm((p) => ({ ...p, policeStation: e.target.value }))} placeholder="e.g. Andheri Police Station" />
                 </div>
               </>
             )}
             <div className="space-y-1">
-              <Label>Wallet Address (optional)</Label>
+              <Label>{t("admin.users.walletOptional")}</Label>
               <Input value={createForm.walletAddress} onChange={(e) => setCreateForm((p) => ({ ...p, walletAddress: e.target.value }))} placeholder="0x…" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>{t("common.cancel")}</Button>
             <Button onClick={handleCreate} disabled={creating}>
               {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create User
+              {t("admin.users.createUser")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -353,41 +355,41 @@ export default function AdminUsersPage() {
       <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit User — {editUser?.userId}</DialogTitle>
+            <DialogTitle>{t("admin.users.editUserTitle")} — {editUser?.userId}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {editUser?.role === "police" && (
               <>
                 <div className="space-y-1">
-                  <Label>Jurisdiction Pincode</Label>
+                  <Label>{t("admin.users.jurisdictionPincode")}</Label>
                   <Input
                     value={editForm.pincode}
                     onChange={(e) => setEditForm((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
-                    placeholder="6-digit area pincode"
+                    placeholder={t("admin.users.pincodePlaceholder")}
                     maxLength={6}
                     inputMode="numeric"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Badge / Service Number</Label>
+                  <Label>{t("admin.users.badgeNumber")}</Label>
                   <Input value={editForm.badgeNumber} onChange={(e) => setEditForm((p) => ({ ...p, badgeNumber: e.target.value }))} placeholder="e.g. MH-12345" />
                 </div>
                 <div className="space-y-1">
-                  <Label>Police Station</Label>
+                  <Label>{t("admin.users.policeStation")}</Label>
                   <Input value={editForm.policeStation} onChange={(e) => setEditForm((p) => ({ ...p, policeStation: e.target.value }))} placeholder="e.g. Andheri Police Station" />
                 </div>
               </>
             )}
             <div className="space-y-1">
-              <Label>Wallet Address</Label>
+              <Label>{t("admin.users.walletLbl")}</Label>
               <Input value={editForm.walletAddress} onChange={(e) => setEditForm((p) => ({ ...p, walletAddress: e.target.value }))} placeholder="0x…" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditUser(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditUser(null)}>{t("common.cancel")}</Button>
             <Button onClick={handleSaveEdit} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              {t("admin.users.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -397,17 +399,17 @@ export default function AdminUsersPage() {
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>{t("admin.users.deleteUser")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete <span className="font-semibold">{deleteTarget?.name}</span> ({deleteTarget?.email})?
-            This action cannot be undone.
+            {t("admin.users.deleteConfirmPrefix")} <span className="font-semibold">{deleteTarget?.name}</span> ({deleteTarget?.email})?
+            {t("admin.users.cantBeUndone")}
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>{t("common.cancel")}</Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {t("admin.users.deleteUser")}
             </Button>
           </DialogFooter>
         </DialogContent>

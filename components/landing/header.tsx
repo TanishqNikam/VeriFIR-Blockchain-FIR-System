@@ -53,7 +53,7 @@ export function LandingHeader() {
           {/* Right — actions */}
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" asChild className="hidden md:inline-flex">
-              <Link href={dashboardHref}>{user ? "Dashboard" : t("nav.login")}</Link>
+              <Link href={dashboardHref}>{user ? t("nav.dashboard") : t("nav.login")}</Link>
             </Button>
             <Button asChild className="hidden md:inline-flex">
               <Link href="/verify">{t("nav.verifyFir")}</Link>
@@ -90,7 +90,7 @@ export function LandingHeader() {
                   <ThemeToggle />
                 </div>
                 <Button variant="ghost" asChild className="justify-start">
-                  <Link href={dashboardHref}>{user ? "Dashboard" : t("nav.login")}</Link>
+                  <Link href={dashboardHref}>{user ? t("nav.dashboard") : t("nav.login")}</Link>
                 </Button>
                 <Button asChild>
                   <Link href="/verify">{t("nav.verifyFir")}</Link>

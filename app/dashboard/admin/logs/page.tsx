@@ -125,7 +125,7 @@ export default function BlockchainLogsPage() {
       {source === "unavailable" && !loading && (
         <div className="flex items-center gap-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          Blockchain node unreachable. Start the Hardhat node to see live on-chain events.
+          {t("admin.logs.blockchainUnavailable")}
         </div>
       )}
 
@@ -134,7 +134,7 @@ export default function BlockchainLogsPage() {
           <CardTitle>{t("admin.logs.eventTimeline")}</CardTitle>
           <CardDescription>
             {source === "blockchain"
-              ? "Live events queried directly from the FIRRegistry smart contract."
+              ? t("admin.logs.liveEventsDesc")
               : t("admin.logs.eventTimelineDesc")}
           </CardDescription>
         </CardHeader>
@@ -157,7 +157,7 @@ export default function BlockchainLogsPage() {
                 <SelectItem value="all">{t("admin.logs.allEvents")}</SelectItem>
                 <SelectItem value="FIRCreated">{t("admin.logs.firCreated")}</SelectItem>
                 <SelectItem value="FIRVerified">{t("admin.logs.firVerified")}</SelectItem>
-                <SelectItem value="StatusUpdated">Status Updated</SelectItem>
+                <SelectItem value="StatusUpdated">{t("admin.logs.statusUpdated")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -206,7 +206,7 @@ export default function BlockchainLogsPage() {
                           </a>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground w-20">Wallet</span>
+                          <span className="text-muted-foreground w-20">{t("admin.logs.walletLabel")}</span>
                           <code className="flex-1 bg-secondary px-2 py-1 rounded font-mono truncate">{log.walletAddress}</code>
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(log.walletAddress, "Wallet Address")}>
                             <Copy className="h-3 w-3" />
@@ -214,7 +214,7 @@ export default function BlockchainLogsPage() {
                         </div>
                         {log.extra?.cid && (
                           <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground w-20">IPFS CID</span>
+                            <span className="text-muted-foreground w-20">{t("admin.logs.ipfsCidLabel")}</span>
                             <code className="flex-1 bg-secondary px-2 py-1 rounded font-mono truncate">{log.extra.cid}</code>
                           </div>
                         )}
