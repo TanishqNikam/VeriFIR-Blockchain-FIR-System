@@ -1,53 +1,54 @@
-import { FileEdit, Upload, Link as LinkIcon, CheckCircle } from "lucide-react"
+"use client"
 
-const steps = [
-  {
-    step: 1,
-    icon: FileEdit,
-    title: "File FIR Online",
-    description:
-      "Citizen fills out the FIR form with incident details including date, location, and description of the incident.",
-  },
-  {
-    step: 2,
-    icon: Upload,
-    title: "Upload Evidence",
-    description:
-      "Supporting evidence files (images, videos, documents) are uploaded and stored on IPFS with unique content identifiers.",
-  },
-  {
-    step: 3,
-    icon: LinkIcon,
-    title: "Blockchain Recording",
-    description:
-      "FIR data hash and evidence CIDs are recorded on the blockchain, creating an immutable and timestamped record.",
-  },
-  {
-    step: 4,
-    icon: CheckCircle,
-    title: "Police Verification",
-    description:
-      "Police officer reviews and verifies the FIR, adding their digital endorsement to the blockchain record.",
-  },
-]
+import { FileEdit, Upload, Link as LinkIcon, CheckCircle } from "lucide-react"
+import { useLanguage } from "@/lib/i18n/language-context"
 
 export function LandingHow() {
+  const { t } = useLanguage()
+
+  const steps = [
+    {
+      step: 1,
+      icon: FileEdit,
+      title: t("landing.step1Title"),
+      description: t("landing.step1Desc"),
+    },
+    {
+      step: 2,
+      icon: Upload,
+      title: t("landing.step2Title"),
+      description: t("landing.step2Desc"),
+    },
+    {
+      step: 3,
+      icon: LinkIcon,
+      title: t("landing.step3Title"),
+      description: t("landing.step3Desc"),
+    },
+    {
+      step: 4,
+      icon: CheckCircle,
+      title: t("landing.step4Title"),
+      description: t("landing.step4Desc"),
+    },
+  ]
+
   return (
     <section id="how-it-works" className="py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            How It Works
+            {t("landing.howItWorksTitle")}
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            A simple four-step process to file and verify FIRs on the blockchain
+            {t("landing.howItWorksDesc")}
           </p>
         </div>
 
         <div className="mt-16 relative">
           {/* Connection line for desktop */}
           <div className="hidden lg:block absolute top-24 left-[calc(12.5%+24px)] right-[calc(12.5%+24px)] h-0.5 bg-border" />
-          
+
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map((item) => (
               <div key={item.step} className="relative flex flex-col items-center text-center">

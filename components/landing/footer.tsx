@@ -1,7 +1,12 @@
+"use client"
+
 import Link from "next/link"
 import { Shield } from "lucide-react"
+import { useLanguage } from "@/lib/i18n/language-context"
 
 export function LandingFooter() {
+  const { t } = useLanguage()
+
   return (
     <footer id="about" className="border-t border-border bg-secondary/30">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -17,48 +22,47 @@ export function LandingFooter() {
               </div>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-              A blockchain-based system for tamper-proof FIR registration and evidence management,
-              ensuring transparency and trust in the Indian legal system.
+              {t("landing.footerDesc")}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-8 lg:col-span-2 lg:grid-cols-3">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Platform</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("landing.footerPlatform")}</h3>
               <ul className="mt-4 space-y-3">
                 <li>
                   <Link href="/login?action=file" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    File FIR
+                    {t("landing.footerFileFir")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Login
+                    {t("landing.footerLogin")}
                   </Link>
                 </li>
                 <li>
                   <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Features
+                    {t("landing.footerFeatures")}
                   </Link>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Technology</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("landing.footerTechnology")}</h3>
               <ul className="mt-4 space-y-3">
-                <li className="text-sm text-muted-foreground">Ethereum Blockchain</li>
-                <li className="text-sm text-muted-foreground">IPFS Storage</li>
-                <li className="text-sm text-muted-foreground">Smart Contracts</li>
+                <li className="text-sm text-muted-foreground">{t("landing.footerEthereum")}</li>
+                <li className="text-sm text-muted-foreground">{t("landing.footerIpfs")}</li>
+                <li className="text-sm text-muted-foreground">{t("landing.footerSmartContracts")}</li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Resources</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("landing.footerResources")}</h3>
               <ul className="mt-4 space-y-3">
-                <li className="text-sm text-muted-foreground">Documentation</li>
-                <li className="text-sm text-muted-foreground">API Reference</li>
-                <li className="text-sm text-muted-foreground">Support</li>
+                <li className="text-sm text-muted-foreground">{t("landing.footerDocs")}</li>
+                <li className="text-sm text-muted-foreground">{t("landing.footerApi")}</li>
+                <li className="text-sm text-muted-foreground">{t("landing.footerSupport")}</li>
               </ul>
             </div>
           </div>
@@ -67,14 +71,14 @@ export function LandingFooter() {
         <div className="mt-12 border-t border-border pt-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-muted-foreground">
-              Academic Project - Final Year BE
+              {t("landing.footerAcademic")}
             </p>
             <p className="text-sm text-muted-foreground">
-              Department of Computer Engineering
+              {t("landing.footerDept")}
             </p>
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            This is a prototype for academic evaluation purposes only. Not intended for actual law enforcement use.
+            {t("landing.footerDisclaimer")}
           </p>
         </div>
       </div>
