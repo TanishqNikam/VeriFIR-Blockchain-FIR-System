@@ -33,7 +33,8 @@ export default function VerifiedFIRsPage() {
       fir.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fir.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fir.citizenName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (fir.policeVerifierName ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+      (fir.policeVerifierName ?? "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (fir.blockchainTxHash ?? "").toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || fir.status === statusFilter
     return matchesSearch && matchesStatus
   })

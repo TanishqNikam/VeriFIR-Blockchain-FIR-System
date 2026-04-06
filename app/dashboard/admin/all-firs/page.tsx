@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { StatusBadge } from "@/components/dashboard/status-badge"
-import { Search, ExternalLink, Download, MapPin, CalendarRange, X } from "lucide-react"
+import { Search, ExternalLink, Download, MapPin, CalendarRange, X, RefreshCw, AlertCircle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import {
   Select,
   SelectContent,
@@ -20,8 +21,32 @@ import { useLanguage } from "@/lib/i18n/language-context"
 
 export default function AllFIRsPage() {
   const { firs, loading, error, total } = useFIRs()
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<FIRStatus | "all">("all")
+  const [retryingFirId, setRetryingFirId] = useState<string | null>(null)
+
+  const handleRetryBlockchain = async (firId: string) => {
+    setRetryingFirId(firId)
+    try {
+      const res = await fetch("/api/admin/retry-blockchain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firId }),
+      })
+      const data = await res.json()
+      if (data.succeeded > 0) {
+        toast({ title: "Blockchain Registration Successful", description: `FIR ${firId} has been registered on the blockchain.` })
+        window.location.reload()
+      } else {
+        toast({ title: "Blockchain Registration Failed", description: data.results?.[0]?.error || "Blockchain node may be unavailable.", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not reach the server.", variant: "destructive" })
+    } finally {
+      setRetryingFirId(null)
+    }
+  }
   const [locationFilter, setLocationFilter] = useState("")
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
@@ -155,7 +180,7 @@ export default function AllFIRsPage() {
                 <TableRow>
                   <TableHead>{t("admin.allFirs.colFirId")}</TableHead>
                   <TableHead>{t("admin.allFirs.colCitizen")}</TableHead>
-                  <TableHead className="hidden md:table-cell">{t("admin.allFirs.colVerifier")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">Assigned Officer</TableHead>
                   <TableHead>{t("admin.allFirs.colStatus")}</TableHead>
                   <TableHead className="hidden lg:table-cell">{t("admin.allFirs.colTxHash")}</TableHead>
                   <TableHead className="hidden sm:table-cell">{t("admin.allFirs.colFiledDate")}</TableHead>
@@ -184,22 +209,39 @@ export default function AllFIRsPage() {
                           <p className="text-xs text-muted-foreground">{fir.citizenId}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {fir.policeVerifierName || <span className="text-muted-foreground">-</span>}
+                      <TableCell className="hidden sm:table-cell">
+                        {fir.policeVerifierName || <span className="text-muted-foreground text-xs">Unassigned</span>}
                       </TableCell>
                       <TableCell><StatusBadge status={fir.status} /></TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <div className="flex items-center gap-1">
-                          <span className="font-mono text-xs truncate max-w-32">{fir.blockchainTxHash.slice(0, 16)}...</span>
-                          <a
-                            href={`https://sepolia.etherscan.io/tx/${fir.blockchainTxHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-primary"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </div>
+                        {fir.blockchainTxHash === "pending" ? (
+                          <div className="flex items-center gap-1.5">
+                            <AlertCircle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+                            <span className="text-xs text-amber-600">Pending</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              title="Retry blockchain registration"
+                              onClick={() => handleRetryBlockchain(fir.id)}
+                              disabled={retryingFirId === fir.id}
+                            >
+                              <RefreshCw className={`h-3 w-3 ${retryingFirId === fir.id ? "animate-spin" : ""}`} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-xs truncate max-w-32">{fir.blockchainTxHash.slice(0, 16)}...</span>
+                            <a
+                              href={`https://sepolia.etherscan.io/tx/${fir.blockchainTxHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-muted-foreground hover:text-primary"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                         {new Date(fir.filedDate).toLocaleDateString("en-IN")}

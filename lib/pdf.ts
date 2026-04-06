@@ -208,12 +208,43 @@ export async function downloadFIRPdf(fir: FIR): Promise<void> {
   }
 
   // ── Evidence files ────────────────────────────────────────────────────────
-  if (fir.evidenceFiles.length > 0) {
+  const allEvidenceFiles = [
+    ...fir.evidenceFiles,
+    ...(fir.policeEvidenceFiles ?? []),
+  ]
+
+  if (allEvidenceFiles.length > 0) {
     doc.setFontSize(10)
     doc.setFont("helvetica", "bold")
     doc.setTextColor(100, 116, 139)
     doc.text("EVIDENCE FILES", margin, y)
     y += 2
+
+    // Separate files by type
+    const imageFiles = allEvidenceFiles.filter((f) =>
+      /^image\//i.test(f.type || "") || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name)
+    )
+    const audioFiles = allEvidenceFiles.filter((f) =>
+      /^audio\//i.test(f.type || "") || /\.(mp3|wav|ogg|aac|m4a)$/i.test(f.name)
+    )
+    const videoFiles = allEvidenceFiles.filter((f) =>
+      /^video\//i.test(f.type || "") || /\.(mp4|mov|avi|mkv|webm)$/i.test(f.name)
+    )
+    const otherFiles = allEvidenceFiles.filter(
+      (f) => !imageFiles.includes(f) && !audioFiles.includes(f) && !videoFiles.includes(f)
+    )
+
+    // Table of all evidence with type labels
+    const evidenceRows = allEvidenceFiles.map((f, i) => {
+      let category = "Document"
+      if (imageFiles.includes(f)) category = "Image"
+      else if (audioFiles.includes(f)) category = "Audio"
+      else if (videoFiles.includes(f)) category = "Video"
+      const addedBy = (f as { uploadedBy?: string }).uploadedBy
+        ? `Officer: ${(f as { uploadedBy?: string }).uploadedBy}`
+        : "Complainant"
+      return [String(i + 1), f.name, category, addedBy, f.ipfsCid.slice(0, 28) + "…"]
+    })
 
     autoTable(doc, {
       startY: y,
@@ -221,16 +252,103 @@ export async function downloadFIRPdf(fir: FIR): Promise<void> {
       theme: "striped",
       headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 8 },
       styles: { fontSize: 8 },
-      head: [["File Name", "Type", "IPFS CID"]],
-      body: fir.evidenceFiles.map((f) => [
-        f.name,
-        f.type || "—",
-        f.ipfsCid.slice(0, 30) + "…",
-      ]),
+      head: [["#", "File Name", "Type", "Submitted By", "IPFS CID"]],
+      body: evidenceRows,
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 8
+    y = (doc as any).lastAutoTable.finalY + 6
+
+    // Audio/Video media note
+    const mediaFiles = [...audioFiles, ...videoFiles]
+    if (mediaFiles.length > 0) {
+      doc.setFontSize(8)
+      doc.setFont("helvetica", "italic")
+      doc.setTextColor(100, 116, 139)
+      const mediaNote = `Note: ${audioFiles.length > 0 ? `${audioFiles.length} audio file(s)` : ""}${audioFiles.length > 0 && videoFiles.length > 0 ? " and " : ""}${videoFiles.length > 0 ? `${videoFiles.length} video file(s)` : ""} are attached as evidence. Audio and video files cannot be embedded in PDF. Download the evidence package from IPFS using the CIDs listed above to access these files.`
+      const mediaLines = doc.splitTextToSize(mediaNote, pageW - margin * 2)
+      doc.text(mediaLines, margin, y)
+      y += mediaLines.length * 4 + 6
+    }
+
+    // Embedded images
+    if (imageFiles.length > 0) {
+      const IPFS_GATEWAYS = [
+        "https://gateway.pinata.cloud/ipfs",
+        "https://cloudflare-ipfs.com/ipfs",
+        "https://ipfs.io/ipfs",
+      ]
+
+      doc.setFont("helvetica", "bold")
+      doc.setFontSize(9)
+      doc.setTextColor(100, 116, 139)
+      doc.text("ATTACHED IMAGES", margin, y)
+      y += 5
+
+      for (const imgFile of imageFiles) {
+        // Try to fetch and embed each image
+        let imgData: string | null = null
+        for (const gateway of IPFS_GATEWAYS) {
+          try {
+            const res = await fetch(`${gateway}/${imgFile.ipfsCid}`)
+            if (!res.ok) continue
+            const blob = await res.blob()
+            imgData = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result as string)
+              reader.onerror = reject
+              reader.readAsDataURL(blob)
+            })
+            break
+          } catch {
+            // try next gateway
+          }
+        }
+
+        if (imgData) {
+          // Check page space; add new page if needed
+          const imgMaxHeight = 60
+          const imgMaxWidth = pageW - margin * 2
+          if (y + imgMaxHeight + 20 > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage()
+            y = margin
+          }
+          try {
+            // Determine image format
+            const format = imgData.startsWith("data:image/png") ? "PNG"
+              : imgData.startsWith("data:image/gif") ? "GIF"
+              : "JPEG"
+            doc.addImage(imgData, format, margin, y, imgMaxWidth, 0)
+            // Calculate rendered height based on aspect ratio
+            const tempImg = new Image()
+            tempImg.src = imgData
+            const aspectRatio = tempImg.naturalHeight / (tempImg.naturalWidth || 1)
+            const renderedHeight = Math.min(imgMaxWidth * aspectRatio, imgMaxHeight)
+            y += renderedHeight + 4
+            doc.setFontSize(7)
+            doc.setFont("helvetica", "italic")
+            doc.setTextColor(148, 163, 184)
+            doc.text(imgFile.name, margin, y)
+            y += 6
+          } catch {
+            // If image embed fails, just log the file name
+            doc.setFontSize(8)
+            doc.setFont("helvetica", "normal")
+            doc.setTextColor(100, 116, 139)
+            doc.text(`[Image could not be embedded: ${imgFile.name}]`, margin, y)
+            y += 6
+          }
+        } else {
+          // Could not fetch from any gateway
+          doc.setFontSize(8)
+          doc.setFont("helvetica", "italic")
+          doc.setTextColor(100, 116, 139)
+          doc.text(`[Image unavailable from IPFS: ${imgFile.name} — CID: ${imgFile.ipfsCid.slice(0, 20)}…]`, margin, y)
+          y += 6
+        }
+      }
+      y += 4
+    }
   }
 
   // ── Blockchain record ─────────────────────────────────────────────────────

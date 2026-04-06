@@ -131,6 +131,8 @@ export async function POST(req: Request) {
     const totalPropertyValueRaw = formData.get("totalPropertyValue");
     const totalPropertyValue = totalPropertyValueRaw ? Number(totalPropertyValueRaw) : undefined;
     const firstInformationContents = (formData.get("firstInformationContents") as string | null)?.trim() || undefined;
+    const digitalSignature = (formData.get("digitalSignature") as string | null)?.trim() || undefined;
+    const declarationAccepted = formData.get("declarationAccepted") === "true";
     // JSON-encoded sub-arrays: acts, accusedDetails, propertyDetails, complainantDetails
     let acts, accusedDetails, propertyDetails, complainantDetails;
     try { acts = JSON.parse((formData.get("acts") as string) || "null") ?? undefined; } catch { acts = undefined; }
@@ -230,6 +232,7 @@ export async function POST(req: Request) {
       typeOfInformation, placeAddress, distanceFromPS, beatNo,
       complainantDetails, accusedDetails, delayReason, propertyDetails,
       totalPropertyValue, firstInformationContents,
+      ...(digitalSignature ? { digitalSignature, declarationAccepted } : {}),
     });
 
     // ── 9. Register on blockchain (non-blocking) ─────────────────────────────

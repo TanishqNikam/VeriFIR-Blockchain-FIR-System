@@ -16,6 +16,7 @@ import {
 import { useLanguage } from "@/lib/i18n/language-context"
 
 type EventType = "FIRCreated" | "FIRVerified" | "StatusUpdated" | "all"
+type DataSource = "blockchain" | "database" | "unavailable"
 
 interface BlockchainEvent {
   id: string
@@ -34,7 +35,7 @@ export default function BlockchainLogsPage() {
 
   const [events, setEvents] = useState<BlockchainEvent[]>([])
   const [loading, setLoading] = useState(true)
-  const [source, setSource] = useState<"blockchain" | "unavailable">("blockchain")
+  const [source, setSource] = useState<DataSource>("blockchain")
   const [searchQuery, setSearchQuery] = useState("")
   const [eventFilter, setEventFilter] = useState<EventType>("all")
 
@@ -122,6 +123,12 @@ export default function BlockchainLogsPage() {
         </Button>
       </div>
 
+      {source === "database" && !loading && (
+        <div className="flex items-center gap-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          Blockchain node is unreachable — showing records from the database. Connect your blockchain node and refresh for live on-chain data.
+        </div>
+      )}
       {source === "unavailable" && !loading && (
         <div className="flex items-center gap-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
@@ -135,6 +142,8 @@ export default function BlockchainLogsPage() {
           <CardDescription>
             {source === "blockchain"
               ? t("admin.logs.liveEventsDesc")
+              : source === "database"
+              ? "Showing FIR registration records from the database (blockchain node offline)"
               : t("admin.logs.eventTimelineDesc")}
           </CardDescription>
         </CardHeader>

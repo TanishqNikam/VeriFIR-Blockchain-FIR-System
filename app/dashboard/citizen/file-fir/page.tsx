@@ -177,8 +177,10 @@ export default function FileFIRPage() {
 
   const totalPropertyValue = properties.reduce((sum, p) => sum + (parseFloat(p.value) || 0), 0)
 
-  // ── Step 6: Evidence ─────────────────────────────────────────────────────────
+  // ── Step 6: Evidence + Declaration ──────────────────────────────────────────
   const [files, setFiles] = useState<UploadedFile[]>([])
+  const [declarationChecked, setDeclarationChecked] = useState(false)
+  const [digitalSignature, setDigitalSignature] = useState("")
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files
@@ -229,6 +231,8 @@ export default function FileFIRPage() {
     if (!location.trim()) missingFields.push("Incident Details (Step 1): Area / locality name")
     if (!title.trim()) missingFields.push("Offence Details (Step 2): Brief description of offence")
     if (!firstInformationContents.trim()) missingFields.push("Narrative (Step 5): First Information Contents")
+    if (!declarationChecked) missingFields.push("Declaration (Step 6): You must accept the truth declaration")
+    if (!digitalSignature.trim()) missingFields.push("Declaration (Step 6): Digital signature (your full name) is required")
     if (missingFields.length > 0) {
       toast({
         title: `${missingFields.length} Required Field${missingFields.length > 1 ? "s" : ""} Missing`,
@@ -288,6 +292,10 @@ export default function FileFIRPage() {
         uid: uid || undefined,
       }
       formData.append("complainantDetails", JSON.stringify(cd))
+
+      // Declaration & digital signature
+      formData.append("declarationAccepted", "true")
+      formData.append("digitalSignature", digitalSignature.trim())
 
       // Evidence files
       for (const uploaded of files) {
@@ -896,6 +904,43 @@ export default function FileFIRPage() {
                     <span>{t("citizen.fileFir.reviewEvidence")}</span><span className="text-foreground">{files.length} file(s)</span>
                   </div>
                 </div>
+
+                {/* Truth Declaration */}
+                <div className="rounded-lg border border-border p-4 space-y-4">
+                  <h4 className="text-sm font-semibold text-foreground">Declaration</h4>
+
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={declarationChecked}
+                      onChange={(e) => setDeclarationChecked(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-primary flex-shrink-0"
+                    />
+                    <span className="text-sm text-foreground leading-relaxed">
+                      I hereby declare that the information provided in this First Information Report is true and correct to the best of my knowledge and belief. I understand that providing false information is a punishable offence under applicable law.
+                    </span>
+                  </label>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="digital-signature">
+                      Digital Signature (Full Name) <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <input
+                        id="digital-signature"
+                        type="text"
+                        placeholder="Type your full name as digital signature"
+                        value={digitalSignature}
+                        onChange={(e) => setDigitalSignature(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm italic font-medium placeholder:font-normal placeholder:not-italic focus:outline-none focus:ring-2 focus:ring-ring"
+                        style={{ fontFamily: "cursive" }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Type your full name. This serves as your digital signature and will be permanently recorded with the FIR on the blockchain.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </>
           )}
@@ -912,7 +957,12 @@ export default function FileFIRPage() {
                 {t("common.next")} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             ) : (
-              <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting || !declarationChecked || !digitalSignature.trim()}
+                title={!declarationChecked ? "Accept the declaration first" : !digitalSignature.trim() ? "Enter your digital signature" : undefined}
+              >
                 {isSubmitting ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("citizen.fileFir.submittingFir")}</>
                 ) : (

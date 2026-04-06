@@ -45,27 +45,31 @@ export default function PublicVerifyPage() {
     setSearched(true)
 
     try {
-      // Try FIR ID first, then tx hash
-      let res = await fetch(`/api/fir/${encodeURIComponent(q)}`)
+      let firData = null
 
-      if (!res.ok && q.startsWith("0x")) {
-        res = await fetch(`/api/fir?txHash=${encodeURIComponent(q)}&limit=1`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.firs?.length > 0) {
-            const firId = data.firs[0].id
-            res = await fetch(`/api/fir/${firId}`)
+      if (q.toUpperCase().startsWith("FIR-")) {
+        // Lookup by FIR ID
+        const res = await fetch(`/api/fir/${encodeURIComponent(q)}`)
+        if (res.ok) firData = await res.json()
+      } else {
+        // Lookup by transaction hash
+        const listRes = await fetch(`/api/fir?txHash=${encodeURIComponent(q)}&limit=1`)
+        if (listRes.ok) {
+          const listData = await listRes.json()
+          if (listData.firs?.length > 0) {
+            const firId = listData.firs[0].id
+            const detailRes = await fetch(`/api/fir/${firId}`)
+            if (detailRes.ok) firData = await detailRes.json()
           }
         }
       }
 
-      if (!res.ok) {
+      if (!firData) {
         setError(t("verify.notFound"))
         return
       }
 
-      const data = await res.json()
-      setResult(data)
+      setResult(firData)
     } catch {
       setError(t("verify.failed"))
     } finally {

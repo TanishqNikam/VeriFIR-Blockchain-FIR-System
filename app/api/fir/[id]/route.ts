@@ -193,6 +193,9 @@ export async function PATCH(
       }
       fir.status = "under-verification";
       fir.underVerificationAt = new Date();
+      // Record which officer picked up this FIR so admin can see the assigned officer
+      if (body.policeVerifierId) fir.policeVerifierId = body.policeVerifierId;
+      if (body.policeVerifierName) fir.policeVerifierName = body.policeVerifierName;
       await fir.save();
 
       // Audit log

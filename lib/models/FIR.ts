@@ -289,6 +289,8 @@ const FIRSchema = new Schema<IFIR>(
     propertyDetails: { type: [PropertyDetailSchema], default: undefined },
     totalPropertyValue: { type: Number },
     firstInformationContents: { type: String, maxlength: 10000 },
+    digitalSignature: { type: String },
+    declarationAccepted: { type: Boolean, default: false },
     policeVerifierId: { type: String },
     policeVerifierName: { type: String },
     policeVerifierWallet: { type: String },

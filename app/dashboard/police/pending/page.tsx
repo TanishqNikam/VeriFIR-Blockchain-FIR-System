@@ -22,7 +22,8 @@ export default function PendingFIRsPage() {
     (fir) =>
       fir.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fir.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fir.citizenName.toLowerCase().includes(searchQuery.toLowerCase())
+      fir.citizenName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (fir.blockchainTxHash ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
