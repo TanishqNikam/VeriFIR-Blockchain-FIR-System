@@ -26,6 +26,7 @@
  */
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { waitUntil } from "@vercel/functions";
 import { connectDB } from "@/lib/db";
 import FIRModel from "@/lib/models/FIR";
 import UserModel from "@/lib/models/User";
@@ -236,21 +237,20 @@ export async function POST(req: Request) {
     });
 
     // ── 9. Register on blockchain (non-blocking) ─────────────────────────────
-    // Blockchain failure no longer crashes FIR creation.
-    let txHash = "pending";
-    let blockNumber = 0;
-    registerFIROnChain(firId, ipfsCid, storedHash, "citizen")
-      .then(async (result) => {
-        txHash = result.txHash;
-        blockNumber = result.blockNumber;
-        await FIRModel.updateOne(
-          { firId },
-          { $set: { blockchainTxHash: result.txHash, blockNumber: result.blockNumber } }
-        );
-      })
-      .catch((err) => {
-        console.warn(`[POST /api/fir] Blockchain registration failed for ${firId}:`, err.message);
-      });
+    // waitUntil keeps the serverless function alive until blockchain registration
+    // completes even after the HTTP response has been sent (required on Vercel).
+    waitUntil(
+      registerFIROnChain(firId, ipfsCid, storedHash, "citizen")
+        .then(async (result) => {
+          await FIRModel.updateOne(
+            { firId },
+            { $set: { blockchainTxHash: result.txHash, blockNumber: result.blockNumber } }
+          );
+        })
+        .catch((err) => {
+          console.warn(`[POST /api/fir] Blockchain registration failed for ${firId}:`, err.message);
+        })
+    );
 
     // ── 10. Audit log ─────────────────────────────────────────────────────────
     logAudit({

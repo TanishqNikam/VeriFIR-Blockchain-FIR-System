@@ -18,6 +18,7 @@
  *   MongoDB so the migration only runs once per FIR.
  */
 import { NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import crypto from "crypto";
 import { requireSession, isAuthError } from "@/lib/api-auth";
 
@@ -213,7 +214,7 @@ export async function PATCH(
       emitFIRUpdate({ firId: id, status: "under-verification", citizenId: fir.citizenId, title: fir.title });
 
       // On-chain status update — use police signer (non-blocking)
-      updateFIRStatusOnChain(id, "under-verification", "police").catch(() => {});
+      waitUntil(updateFIRStatusOnChain(id, "under-verification", "police").catch(() => {}));
 
       // Notify citizen
       await createNotification({
@@ -271,11 +272,11 @@ export async function PATCH(
 
       // On-chain status update — encode rejection reason fingerprint (non-blocking)
       // Format: "rejected:{sha256(reason).slice(0,16)}" — auditors can verify reason hash
-      updateFIRStatusOnChain(
+      waitUntil(updateFIRStatusOnChain(
         id,
         `rejected:${reasonFingerprint(rejectionReason)}`,
         "police"
-      ).catch(() => {});
+      ).catch(() => {}));
 
       // Notify citizen
       await createNotification({
