@@ -33,8 +33,12 @@ export default function AllFIRsPage() {
       const res = await fetch("/api/admin/backfill-officers", { method: "POST" })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Backfill failed")
-      toast({ title: "Officers Assigned", description: data.message })
-      window.location.reload()
+      if (data.updated > 0) {
+        toast({ title: "Officers Assigned", description: data.message })
+        window.location.reload()
+      } else {
+        toast({ title: "No Updates Made", description: data.message, variant: "destructive" })
+      }
     } catch (err) {
       toast({ title: "Backfill Failed", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" })
     } finally {

@@ -13,6 +13,45 @@ import FIRModel from "@/lib/models/FIR";
 import UserModel from "@/lib/models/User";
 import { requireSession, isAuthError } from "@/lib/api-auth";
 
+/** GET — diagnostic only, no writes. Returns unassigned FIR count and unmatched pincodes. */
+export async function GET() {
+  const auth = await requireSession(["admin"]);
+  if (isAuthError(auth)) return auth;
+
+  try {
+    await connectDB();
+
+    const firs = await FIRModel.find({
+      pincode: { $exists: true, $nin: [null, ""] },
+      $or: [
+        { policeVerifierName: { $exists: false } },
+        { policeVerifierName: null },
+        { policeVerifierName: "" },
+      ],
+    })
+      .select("firId pincode")
+      .lean();
+
+    const pincodes = [...new Set(firs.map((f) => f.pincode).filter(Boolean))] as string[];
+    const officers = await UserModel.find({ role: "police", pincode: { $in: pincodes } })
+      .select("userId name pincode")
+      .lean();
+
+    const officerPincodes = new Set(officers.map((o) => o.pincode).filter(Boolean));
+    const unmatched = pincodes.filter((p) => !officerPincodes.has(p));
+
+    return NextResponse.json({
+      unassignedFIRs: firs.length,
+      firPincodes: pincodes,
+      officersFound: officers.map((o) => ({ name: o.name, pincode: o.pincode })),
+      unmatchedPincodes: unmatched,
+    });
+  } catch (err) {
+    console.error("[GET /api/admin/backfill-officers]", err);
+    return NextResponse.json({ error: "Diagnostic failed" }, { status: 500 });
+  }
+}
+
 export async function POST() {
   const auth = await requireSession(["admin"]);
   if (isAuthError(auth)) return auth;
@@ -50,11 +89,14 @@ export async function POST() {
     }
 
     let updated = 0;
-    let skipped = 0;
+    const unmatchedPincodes = new Set<string>();
 
     for (const fir of firs) {
       const officer = fir.pincode ? officerByPincode.get(fir.pincode) : undefined;
-      if (!officer) { skipped++; continue; }
+      if (!officer) {
+        if (fir.pincode) unmatchedPincodes.add(fir.pincode);
+        continue;
+      }
 
       await FIRModel.updateOne(
         { firId: fir.firId },
@@ -63,10 +105,16 @@ export async function POST() {
       updated++;
     }
 
+    const unmatched = [...unmatchedPincodes];
     return NextResponse.json({
       updated,
-      skipped,
-      message: `Updated ${updated} FIR(s). ${skipped} skipped (no officer found for pincode).`,
+      skipped: unmatched.length > 0 ? firs.length - updated : 0,
+      unmatchedPincodes: unmatched,
+      message: updated > 0
+        ? `Updated ${updated} FIR(s) with assigned officers.${unmatched.length > 0 ? ` No officer found for pincodes: ${unmatched.join(", ")} — assign an officer to these pincodes in User Management.` : ""}`
+        : unmatched.length > 0
+          ? `No officers found for pincodes: ${unmatched.join(", ")}. Go to User Management and ensure police officers have these pincodes assigned.`
+          : "All FIRs already have an assigned officer.",
     });
   } catch (err) {
     console.error("[POST /api/admin/backfill-officers]", err);
