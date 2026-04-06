@@ -204,6 +204,10 @@ export interface IFIR extends Document {
   totalPropertyValue?: number;
   /** Verbatim narrative of the complaint (FIR form section 12) */
   firstInformationContents?: string;
+  /** Typed full name submitted as digital signature at filing */
+  digitalSignature?: string;
+  /** Whether the complainant accepted the truth declaration at filing */
+  declarationAccepted?: boolean;
   status: "pending" | "under-verification" | "verified" | "rejected";
   citizenId: string;
   citizenName: string;
