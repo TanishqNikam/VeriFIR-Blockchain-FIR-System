@@ -134,6 +134,7 @@ export async function POST(req: Request) {
     const firstInformationContents = (formData.get("firstInformationContents") as string | null)?.trim() || undefined;
     const digitalSignature = (formData.get("digitalSignature") as string | null)?.trim() || undefined;
     const declarationAccepted = formData.get("declarationAccepted") === "true";
+    const signatureImageFile = formData.get("signatureImage") as File | null;
     // JSON-encoded sub-arrays: acts, accusedDetails, propertyDetails, complainantDetails
     let acts, accusedDetails, propertyDetails, complainantDetails;
     try { acts = JSON.parse((formData.get("acts") as string) || "null") ?? undefined; } catch { acts = undefined; }
@@ -183,6 +184,20 @@ export async function POST(req: Request) {
       const buffer = Buffer.from(await file.arrayBuffer());
       const cid = await uploadFileToPinata(buffer, file.name, file.type || "application/octet-stream");
       evidenceFiles.push({ name: file.name, type: file.type, size: file.size, ipfsCid: cid, uploadedAt: new Date() });
+    }
+
+    // ── 4b. Upload signature image to IPFS (if provided) ────────────────────
+    let signatureImageCid: string | undefined;
+    if (signatureImageFile && signatureImageFile.size > 0) {
+      const allowed = ["image/png", "image/jpeg", "image/jpg"];
+      if (!allowed.includes(signatureImageFile.type)) {
+        return NextResponse.json({ error: "Signature image must be PNG or JPG" }, { status: 400 });
+      }
+      if (signatureImageFile.size > 1024 * 1024) {
+        return NextResponse.json({ error: "Signature image must be under 1 MB" }, { status: 400 });
+      }
+      const buffer = Buffer.from(await signatureImageFile.arrayBuffer());
+      signatureImageCid = await uploadFileToPinata(buffer, `signature-${Date.now()}.${signatureImageFile.type === "image/png" ? "png" : "jpg"}`, signatureImageFile.type);
     }
 
     // ── 5. Generate collision-safe FIR ID ────────────────────────────────────
@@ -244,7 +259,9 @@ export async function POST(req: Request) {
       typeOfInformation, placeAddress, distanceFromPS, beatNo,
       complainantDetails, accusedDetails, delayReason, propertyDetails,
       totalPropertyValue, firstInformationContents,
-      ...(digitalSignature ? { digitalSignature, declarationAccepted } : {}),
+      ...(digitalSignature ? { digitalSignature } : {}),
+      ...(signatureImageCid ? { signatureImageCid } : {}),
+      ...(declarationAccepted ? { declarationAccepted } : {}),
     });
 
     // ── 9. Register on blockchain (non-blocking) ─────────────────────────────

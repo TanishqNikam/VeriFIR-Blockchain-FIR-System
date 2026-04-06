@@ -351,6 +351,58 @@ export async function downloadFIRPdf(fir: FIR): Promise<void> {
     }
   }
 
+  // ── Complainant Signature ────────────────────────────────────────────────
+  if (fir.signatureImageCid) {
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.setTextColor(100, 116, 139)
+    doc.text("COMPLAINANT SIGNATURE", margin, y)
+    y += 5
+
+    const SIG_GATEWAYS = [
+      "https://gateway.pinata.cloud/ipfs",
+      "https://cloudflare-ipfs.com/ipfs",
+      "https://ipfs.io/ipfs",
+    ]
+    let sigData: string | null = null
+    for (const gateway of SIG_GATEWAYS) {
+      try {
+        const res = await fetch(`${gateway}/${fir.signatureImageCid}`)
+        if (!res.ok) continue
+        const blob = await res.blob()
+        sigData = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        })
+        break
+      } catch { /* try next */ }
+    }
+
+    if (sigData) {
+      if (y + 30 > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); y = margin }
+      const format = sigData.startsWith("data:image/png") ? "PNG" : "JPEG"
+      doc.addImage(sigData, format, margin, y, 60, 0)
+      const tempImg = new Image()
+      tempImg.src = sigData
+      const renderedH = Math.min(60 * (tempImg.naturalHeight / (tempImg.naturalWidth || 1)), 30)
+      y += renderedH + 4
+    } else {
+      doc.setFontSize(8)
+      doc.setFont("helvetica", "italic")
+      doc.setTextColor(100, 116, 139)
+      doc.text(`[Signature image — CID: ${fir.signatureImageCid.slice(0, 28)}…]`, margin, y)
+      y += 6
+    }
+
+    doc.setFontSize(7)
+    doc.setFont("helvetica", "normal")
+    doc.setTextColor(148, 163, 184)
+    doc.text(`IPFS CID: ${fir.signatureImageCid}`, margin, y)
+    y += 8
+  }
+
   // ── Blockchain record ─────────────────────────────────────────────────────
   doc.setFontSize(10)
   doc.setFont("helvetica", "bold")

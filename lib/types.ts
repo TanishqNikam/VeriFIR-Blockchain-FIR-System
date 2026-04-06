@@ -83,6 +83,9 @@ export interface FIR {
   propertyDetails?: FIRPropertyDetail[]
   totalPropertyValue?: number
   firstInformationContents?: string
+  digitalSignature?: string
+  signatureImageCid?: string
+  declarationAccepted?: boolean
 }
 
 export interface OnChainStatusEntry {

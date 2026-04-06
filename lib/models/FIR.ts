@@ -206,6 +206,8 @@ export interface IFIR extends Document {
   firstInformationContents?: string;
   /** Typed full name submitted as digital signature at filing */
   digitalSignature?: string;
+  /** IPFS CID of the signature image (PNG/JPG) uploaded at filing */
+  signatureImageCid?: string;
   /** Whether the complainant accepted the truth declaration at filing */
   declarationAccepted?: boolean;
   status: "pending" | "under-verification" | "verified" | "rejected";
@@ -294,6 +296,7 @@ const FIRSchema = new Schema<IFIR>(
     totalPropertyValue: { type: Number },
     firstInformationContents: { type: String, maxlength: 10000 },
     digitalSignature: { type: String },
+    signatureImageCid: { type: String },
     declarationAccepted: { type: Boolean, default: false },
     policeVerifierId: { type: String },
     policeVerifierName: { type: String },

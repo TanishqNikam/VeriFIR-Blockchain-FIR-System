@@ -180,7 +180,8 @@ export default function FileFIRPage() {
   // ── Step 6: Evidence + Declaration ──────────────────────────────────────────
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [declarationChecked, setDeclarationChecked] = useState(false)
-  const [digitalSignature, setDigitalSignature] = useState("")
+  const [signatureFile, setSignatureFile] = useState<File | null>(null)
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null)
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files
@@ -232,7 +233,7 @@ export default function FileFIRPage() {
     if (!title.trim()) missingFields.push("Offence Details (Step 2): Brief description of offence")
     if (!firstInformationContents.trim()) missingFields.push("Narrative (Step 5): First Information Contents")
     if (!declarationChecked) missingFields.push("Declaration (Step 6): You must accept the truth declaration")
-    if (!digitalSignature.trim()) missingFields.push("Declaration (Step 6): Digital signature (your full name) is required")
+    if (!signatureFile) missingFields.push("Declaration (Step 6): Signature image (PNG or JPG) is required")
     if (missingFields.length > 0) {
       toast({
         title: `${missingFields.length} Required Field${missingFields.length > 1 ? "s" : ""} Missing`,
@@ -293,9 +294,9 @@ export default function FileFIRPage() {
       }
       formData.append("complainantDetails", JSON.stringify(cd))
 
-      // Declaration & digital signature
+      // Declaration & signature image
       formData.append("declarationAccepted", "true")
-      formData.append("digitalSignature", digitalSignature.trim())
+      if (signatureFile) formData.append("signatureImage", signatureFile)
 
       // Evidence files
       for (const uploaded of files) {
@@ -922,22 +923,44 @@ export default function FileFIRPage() {
                   </label>
 
                   <div className="space-y-2">
-                    <Label htmlFor="digital-signature">
-                      Digital Signature (Full Name) <span className="text-destructive">*</span>
+                    <Label>
+                      Signature Image <span className="text-destructive">*</span>
                     </Label>
-                    <div className="relative">
-                      <input
-                        id="digital-signature"
-                        type="text"
-                        placeholder="Type your full name as digital signature"
-                        value={digitalSignature}
-                        onChange={(e) => setDigitalSignature(e.target.value)}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm italic font-medium placeholder:font-normal placeholder:not-italic focus:outline-none focus:ring-2 focus:ring-ring"
-                        style={{ fontFamily: "cursive" }}
-                      />
-                    </div>
+                    {signaturePreview ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={signaturePreview}
+                          alt="Signature preview"
+                          className="max-h-24 max-w-xs rounded border border-border bg-white p-2 object-contain"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { setSignatureFile(null); setSignaturePreview(null) }}
+                          className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground h-5 w-5 flex items-center justify-center text-xs leading-none"
+                          title="Remove signature"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-input rounded-md cursor-pointer hover:border-primary transition-colors bg-muted/30">
+                        <span className="text-sm text-muted-foreground">Click to upload signature image</span>
+                        <span className="text-xs text-muted-foreground mt-1">PNG or JPG, max 1 MB</span>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            setSignatureFile(file)
+                            setSignaturePreview(URL.createObjectURL(file))
+                          }}
+                        />
+                      </label>
+                    )}
                     <p className="text-xs text-muted-foreground">
-                      Type your full name. This serves as your digital signature and will be permanently recorded with the FIR on the blockchain.
+                      Upload a clear image of your handwritten signature. It will be stored on IPFS and permanently linked to this FIR.
                     </p>
                   </div>
                 </div>
@@ -960,8 +983,8 @@ export default function FileFIRPage() {
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isSubmitting || !declarationChecked || !digitalSignature.trim()}
-                title={!declarationChecked ? "Accept the declaration first" : !digitalSignature.trim() ? "Enter your digital signature" : undefined}
+                disabled={isSubmitting || !declarationChecked || !signatureFile}
+                title={!declarationChecked ? "Accept the declaration first" : !signatureFile ? "Upload your signature image" : undefined}
               >
                 {isSubmitting ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("citizen.fileFir.submittingFir")}</>
