@@ -267,27 +267,61 @@ export async function getContractEvents(
   const contract = getReadContract();
   const provider = getProvider();
 
-  // Alchemy limits queryFilter to 2,000 blocks per request on public networks.
-  // If a deploy block is configured, start from there; otherwise use the last
-  // 2,000 blocks so the query never exceeds the limit and doesn't timeout.
+  // Alchemy limits eth_getLogs to 2,000 blocks per request on public networks.
+  // We chunk the range and merge results so all events are captured regardless
+  // of how far back the contract was deployed.
+  const CHUNK = 2000;
   const deployBlock = process.env.CONTRACT_DEPLOY_BLOCK
     ? parseInt(process.env.CONTRACT_DEPLOY_BLOCK, 10)
     : null;
 
-  let startBlock: number | "earliest" = fromBlock;
-  if (fromBlock === 0 && deployBlock === null) {
-    // No explicit range requested and no deploy block set — query last 2000 blocks
-    const latest = await provider.getBlockNumber();
-    startBlock = Math.max(0, latest - 2000);
-  } else if (fromBlock === 0 && deployBlock !== null) {
+  const latest = await provider.getBlockNumber();
+
+  // Determine start block: explicit caller arg > env deploy block > last 30 days (~216000 blocks, capped at 0)
+  let startBlock: number;
+  if (typeof fromBlock === "number" && fromBlock > 0) {
+    startBlock = fromBlock;
+  } else if (deployBlock !== null) {
     startBlock = deployBlock;
+  } else {
+    // Default: last 30 days worth of Sepolia blocks (~12s per block)
+    startBlock = Math.max(0, latest - 216000);
   }
 
-  const [createdLogs, verifiedLogs, statusLogs] = await Promise.all([
-    contract.queryFilter(contract.filters.FIRCreated(), startBlock),
-    contract.queryFilter(contract.filters.FIRVerified(), startBlock),
-    contract.queryFilter(contract.filters.StatusUpdated(), startBlock),
-  ]);
+  // Build chunk ranges
+  const ranges: Array<[number, number]> = [];
+  for (let start = startBlock; start <= latest; start += CHUNK) {
+    ranges.push([start, Math.min(start + CHUNK - 1, latest)]);
+  }
+
+  // Query each chunk sequentially to avoid hitting rate limits
+  const createdLogs: ethers.EventLog[] = [];
+  const verifiedLogs: ethers.EventLog[] = [];
+  const statusLogs: ethers.EventLog[] = [];
+
+  for (const [from, to] of ranges) {
+    const [c, v, s] = await Promise.all([
+      contract.queryFilter(contract.filters.FIRCreated(), from, to),
+      contract.queryFilter(contract.filters.FIRVerified(), from, to),
+      contract.queryFilter(contract.filters.StatusUpdated(), from, to),
+    ]);
+    createdLogs.push(...(c as ethers.EventLog[]));
+    verifiedLogs.push(...(v as ethers.EventLog[]));
+    statusLogs.push(...(s as ethers.EventLog[]));
+  }
+
+  // Batch-fetch unique block timestamps to avoid one RPC call per event
+  const allLogs = [...createdLogs, ...verifiedLogs, ...statusLogs];
+  const uniqueBlockNumbers = [...new Set(allLogs.map((l) => l.blockNumber))];
+  const blockTimestamps = new Map<number, number>();
+  await Promise.all(
+    uniqueBlockNumbers.map(async (bn) => {
+      try {
+        const block = await provider.getBlock(bn);
+        if (block?.timestamp) blockTimestamps.set(bn, Number(block.timestamp));
+      } catch { /* best-effort */ }
+    })
+  );
 
   const results: ContractEvent[] = [];
 
@@ -297,17 +331,12 @@ export async function getContractEvents(
       data: log.data,
     });
     if (!parsed) continue;
-    let timestamp: number | undefined;
-    try {
-      const block = await provider.getBlock(log.blockNumber);
-      timestamp = block?.timestamp ? Number(block.timestamp) : undefined;
-    } catch { /* best-effort */ }
     results.push({
       event: "FIRCreated",
       firId: String(parsed.args[0] ?? ""),
       txHash: log.transactionHash,
       blockNumber: log.blockNumber,
-      timestamp,
+      timestamp: blockTimestamps.get(log.blockNumber),
       walletAddress: String(parsed.args[4] ?? ""),
       extra: {
         cid: String(parsed.args[1] ?? ""),
@@ -322,17 +351,12 @@ export async function getContractEvents(
       data: log.data,
     });
     if (!parsed) continue;
-    let timestamp: number | undefined;
-    try {
-      const block = await provider.getBlock(log.blockNumber);
-      timestamp = block?.timestamp ? Number(block.timestamp) : undefined;
-    } catch { /* best-effort */ }
     results.push({
       event: "FIRVerified",
       firId: String(parsed.args[0] ?? ""),
       txHash: log.transactionHash,
       blockNumber: log.blockNumber,
-      timestamp,
+      timestamp: blockTimestamps.get(log.blockNumber),
       walletAddress: String(parsed.args[1] ?? ""),
     });
   }
@@ -346,17 +370,12 @@ export async function getContractEvents(
     // Skip StatusUpdated for "pending" — FIRCreated already covers registration
     const status = String(parsed.args[1] ?? "");
     if (status === "pending") continue;
-    let timestamp: number | undefined;
-    try {
-      const block = await provider.getBlock(log.blockNumber);
-      timestamp = block?.timestamp ? Number(block.timestamp) : undefined;
-    } catch { /* best-effort */ }
     results.push({
       event: "StatusUpdated",
       firId: String(parsed.args[0] ?? ""),
       txHash: log.transactionHash,
       blockNumber: log.blockNumber,
-      timestamp,
+      timestamp: blockTimestamps.get(log.blockNumber),
       walletAddress: String(parsed.args[2] ?? ""),
       extra: { status },
     });
