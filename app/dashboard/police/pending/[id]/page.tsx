@@ -82,9 +82,13 @@ export default function FIRReviewPage({ params }: { params: Promise<{ id: string
     fetch(`/api/fir/${fir.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "under-verification" }),
+      body: JSON.stringify({
+        action: "under-verification",
+        policeVerifierId: user?.id || "police-officer",
+        policeVerifierName: user?.name || "Police Officer",
+      }),
     }).catch(() => {/* silent — non-critical */})
-  }, [fir?.id, fir?.status])
+  }, [fir?.id, fir?.status, user?.id, user?.name])
 
   // Fetch existing notes
   useEffect(() => {
