@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { StatusBadge } from "@/components/dashboard/status-badge"
-import { Search, ExternalLink, Download, MapPin, CalendarRange, X, RefreshCw, AlertCircle } from "lucide-react"
+import { Search, ExternalLink, Download, MapPin, CalendarRange, X, RefreshCw, AlertCircle, UserCheck } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Select,
@@ -25,6 +25,22 @@ export default function AllFIRsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<FIRStatus | "all">("all")
   const [retryingFirId, setRetryingFirId] = useState<string | null>(null)
+  const [backfilling, setBackfilling] = useState(false)
+
+  const handleBackfillOfficers = async () => {
+    setBackfilling(true)
+    try {
+      const res = await fetch("/api/admin/backfill-officers", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Backfill failed")
+      toast({ title: "Officers Assigned", description: data.message })
+      window.location.reload()
+    } catch (err) {
+      toast({ title: "Backfill Failed", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" })
+    } finally {
+      setBackfilling(false)
+    }
+  }
 
   const handleRetryBlockchain = async (firId: string) => {
     setRetryingFirId(firId)
@@ -102,10 +118,16 @@ export default function AllFIRsPage() {
           <h1 className="text-2xl font-bold text-foreground">{t("admin.allFirs.title")}</h1>
           <p className="text-muted-foreground">{t("admin.allFirs.desc")}</p>
         </div>
-        <Button variant="outline" onClick={handleExportCSV} disabled={loading || filteredFIRs.length === 0}>
-          <Download className="mr-2 h-4 w-4" />
-          {t("admin.allFirs.exportCsv")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleBackfillOfficers} disabled={backfilling}>
+            {backfilling ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
+            Assign Officers
+          </Button>
+          <Button variant="outline" onClick={handleExportCSV} disabled={loading || filteredFIRs.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            {t("admin.allFirs.exportCsv")}
+          </Button>
+        </div>
       </div>
 
       <Card>

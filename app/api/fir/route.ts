@@ -218,6 +218,12 @@ export async function POST(req: Request) {
     // This prevents IPFS-uploaded data from being orphaned if the chain is slow.
     const originalEvidenceRefs = evidenceFiles.map((f) => ({ name: f.name, cid: f.ipfsCid }));
 
+    // Look up the police officer assigned to this pincode so admin can see
+    // the assigned officer immediately without waiting for an officer to open the FIR.
+    const assignedOfficer = pincode
+      ? await UserModel.findOne({ role: "police", pincode }).lean()
+      : null;
+
     const createdFIR = await FIRModel.create({
       firId, title, description, location, incidentDate, citizenId, citizenName,
       pincode,
@@ -228,6 +234,11 @@ export async function POST(req: Request) {
       evidenceFiles,
       originalEvidenceRefs,
       status: "pending",
+      // Pre-assign the officer responsible for this pincode
+      ...(assignedOfficer ? {
+        policeVerifierId: assignedOfficer.userId,
+        policeVerifierName: assignedOfficer.name,
+      } : {}),
       // Extended NCRB I.I.F.-I fields
       district, policeStation, acts, incidentDateTo, incidentTimeFrom, incidentTimeTo,
       typeOfInformation, placeAddress, distanceFromPS, beatNo,
