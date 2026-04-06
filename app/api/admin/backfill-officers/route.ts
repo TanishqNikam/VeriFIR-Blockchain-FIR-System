@@ -22,7 +22,7 @@ export async function POST() {
 
     // Fetch every FIR that has a pincode but is missing the assigned officer name
     const firs = await FIRModel.find({
-      pincode: { $exists: true, $ne: null, $ne: "" },
+      pincode: { $exists: true, $nin: [null, ""] },
       $or: [
         { policeVerifierName: { $exists: false } },
         { policeVerifierName: null },
