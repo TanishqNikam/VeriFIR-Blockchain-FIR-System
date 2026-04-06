@@ -267,10 +267,26 @@ export async function getContractEvents(
   const contract = getReadContract();
   const provider = getProvider();
 
+  // Alchemy limits queryFilter to 2,000 blocks per request on public networks.
+  // If a deploy block is configured, start from there; otherwise use the last
+  // 2,000 blocks so the query never exceeds the limit and doesn't timeout.
+  const deployBlock = process.env.CONTRACT_DEPLOY_BLOCK
+    ? parseInt(process.env.CONTRACT_DEPLOY_BLOCK, 10)
+    : null;
+
+  let startBlock: number | "earliest" = fromBlock;
+  if (fromBlock === 0 && deployBlock === null) {
+    // No explicit range requested and no deploy block set — query last 2000 blocks
+    const latest = await provider.getBlockNumber();
+    startBlock = Math.max(0, latest - 2000);
+  } else if (fromBlock === 0 && deployBlock !== null) {
+    startBlock = deployBlock;
+  }
+
   const [createdLogs, verifiedLogs, statusLogs] = await Promise.all([
-    contract.queryFilter(contract.filters.FIRCreated(), fromBlock),
-    contract.queryFilter(contract.filters.FIRVerified(), fromBlock),
-    contract.queryFilter(contract.filters.StatusUpdated(), fromBlock),
+    contract.queryFilter(contract.filters.FIRCreated(), startBlock),
+    contract.queryFilter(contract.filters.FIRVerified(), startBlock),
+    contract.queryFilter(contract.filters.StatusUpdated(), startBlock),
   ]);
 
   const results: ContractEvent[] = [];
