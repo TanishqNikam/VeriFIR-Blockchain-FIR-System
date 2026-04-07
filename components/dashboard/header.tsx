@@ -1,6 +1,6 @@
 "use client"
 
-import { Menu, User, LogOut, Settings } from "lucide-react"
+import { Menu, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/dashboard/notification-bell"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -16,13 +16,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+
 interface DashboardHeaderProps {
   title: string
   onMenuClick?: () => void
 }
 
 export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
 
   const initials = user?.name
     ? user.name
@@ -67,23 +68,9 @@ export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/dashboard/profile" className="flex items-center gap-2 cursor-pointer">
-                <User className="h-4 w-4" />
-                My Profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/profile" className="flex items-center gap-2 cursor-pointer">
                 <Settings className="h-4 w-4" />
                 Account Settings
               </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
-              onClick={logout}
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

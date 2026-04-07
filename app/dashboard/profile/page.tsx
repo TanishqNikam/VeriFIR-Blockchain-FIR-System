@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
-import { User, Mail, Phone, Shield, BadgeCheck, Building2, Calendar, Loader2, Save, ArrowLeft } from "lucide-react"
+import { User, Mail, Phone, Shield, BadgeCheck, Building2, Calendar, Loader2, Save, ArrowLeft, KeyRound, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 
 interface ProfileData {
@@ -38,6 +38,13 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // Change password fields
+  const [pwForm, setPwForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" })
+  const [showOld, setShowOld] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [savingPw, setSavingPw] = useState(false)
 
   // Editable fields
   const [name, setName] = useState("")
@@ -96,6 +103,37 @@ export default function ProfilePage() {
       toast({ title: "Update Failed", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!pwForm.oldPassword || !pwForm.newPassword || !pwForm.confirmPassword) {
+      toast({ title: "Validation Error", description: "All password fields are required.", variant: "destructive" })
+      return
+    }
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      toast({ title: "Validation Error", description: "New passwords do not match.", variant: "destructive" })
+      return
+    }
+    if (pwForm.newPassword.length < 8) {
+      toast({ title: "Validation Error", description: "New password must be at least 8 characters.", variant: "destructive" })
+      return
+    }
+    setSavingPw(true)
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword: pwForm.oldPassword, newPassword: pwForm.newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast({ title: "Password Changed", description: "Your password has been updated successfully." })
+      setPwForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
+    } catch (e) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to change password.", variant: "destructive" })
+    } finally {
+      setSavingPw(false)
     }
   }
 
@@ -266,10 +304,76 @@ export default function ProfilePage() {
             {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            To change your password, use the <strong>Change Password</strong> option in the sidebar.
-          </p>
 
+        </CardContent>
+      </Card>
+
+      {/* Change Password Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="h-4 w-4" /> Change Password
+          </CardTitle>
+          <CardDescription>Update your account password</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="old-password">Current Password</Label>
+            <div className="relative">
+              <Input
+                id="old-password"
+                type={showOld ? "text" : "password"}
+                value={pwForm.oldPassword}
+                onChange={(e) => setPwForm((p) => ({ ...p, oldPassword: e.target.value }))}
+                placeholder="Enter current password"
+                className="pr-10"
+              />
+              <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowOld((v) => !v)}>
+                {showOld ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <div className="relative">
+              <Input
+                id="new-password"
+                type={showNew ? "text" : "password"}
+                value={pwForm.newPassword}
+                onChange={(e) => setPwForm((p) => ({ ...p, newPassword: e.target.value }))}
+                placeholder="At least 8 characters"
+                className="pr-10"
+              />
+              <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowNew((v) => !v)}>
+                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirm ? "text" : "password"}
+                value={pwForm.confirmPassword}
+                onChange={(e) => setPwForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                placeholder="Re-enter new password"
+                className="pr-10"
+              />
+              <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowConfirm((v) => !v)}>
+                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && (
+              <p className="text-xs text-destructive">Passwords do not match</p>
+            )}
+          </div>
+
+          <Button onClick={handleChangePassword} disabled={savingPw} className="w-full">
+            {savingPw ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</> : <><KeyRound className="mr-2 h-4 w-4" /> Update Password</>}
+          </Button>
         </CardContent>
       </Card>
     </div>
