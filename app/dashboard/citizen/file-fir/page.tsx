@@ -118,6 +118,7 @@ export default function FileFIRPage() {
   const [step, setStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState("")
   const [result, setResult] = useState<SubmissionResult | null>(null)
 
   // ── Step 1: Incident Details ─────────────────────────────────────────────────
@@ -244,6 +245,9 @@ export default function FileFIRPage() {
     }
 
     setIsSubmitting(true)
+    setSubmitStatus("Uploading evidence to IPFS…")
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 90_000) // 90 s max
     try {
       const formData = new FormData()
 
@@ -303,20 +307,28 @@ export default function FileFIRPage() {
         formData.append("files", uploaded.file)
       }
 
-      const response = await fetch("/api/fir", { method: "POST", body: formData })
+      setSubmitStatus("Saving FIR and registering on blockchain…")
+      const response = await fetch("/api/fir", { method: "POST", body: formData, signal: controller.signal })
+      clearTimeout(timeoutId)
       const data = await response.json()
       if (!response.ok) throw new Error(data.details || data.error || "Server error")
 
       setResult(data as SubmissionResult)
+      setSubmitStatus("")
       toast({ title: t("citizen.fileFir.firFiledTitle"), description: `FIR ${data.firId} ${t("citizen.fileFir.firRecorded")}` })
     } catch (error) {
+      clearTimeout(timeoutId)
+      const isTimeout = error instanceof DOMException && error.name === "AbortError"
       toast({
-        title: t("citizen.fileFir.submissionFailed"),
-        description: error instanceof Error ? error.message : t("citizen.fileFir.submissionFailedDesc"),
+        title: isTimeout ? "Submission Timed Out" : t("citizen.fileFir.submissionFailed"),
+        description: isTimeout
+          ? "The server took too long to respond. This can happen when IPFS storage is slow. Please try again."
+          : error instanceof Error ? error.message : t("citizen.fileFir.submissionFailedDesc"),
         variant: "destructive",
       })
     } finally {
       setIsSubmitting(false)
+      setSubmitStatus("")
     }
   }
 
@@ -987,7 +999,7 @@ export default function FileFIRPage() {
                 title={!declarationChecked ? "Accept the declaration first" : !signatureFile ? "Upload your signature image" : undefined}
               >
                 {isSubmitting ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("citizen.fileFir.submittingFir")}</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {submitStatus || t("citizen.fileFir.submittingFir")}</>
                 ) : (
                   t("citizen.fileFir.submit")
                 )}
