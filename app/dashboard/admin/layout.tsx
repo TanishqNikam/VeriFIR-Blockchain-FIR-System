@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardSidebar, type NavItem } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { LayoutDashboard, FileText, Link as LinkIcon, BarChart3, Users } from "lucide-react"
+import { LayoutDashboard, FileText, Link as LinkIcon, BarChart3, Users, Activity } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/language-context"
 import { useAuth } from "@/lib/auth-context"
 
@@ -36,6 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: "User Management", href: "/dashboard/admin/users", icon: Users },
     { label: t("sidebar.adminNav.blockchainLogs"), href: "/dashboard/admin/logs", icon: LinkIcon },
     { label: t("sidebar.adminNav.reports"), href: "/dashboard/admin/reports", icon: BarChart3 },
+    { label: "System Health", href: "/dashboard/admin/health", icon: Activity },
   ]
 
   return (
