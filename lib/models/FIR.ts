@@ -6,7 +6,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 // ── Sub-document: act & section entry (from real FIR form section 2) ──────────
 export interface IActSection {
-  act: string;      // Name of the act (e.g., "Indian Penal Code, 1860")
+  act: string;      // Name of the act (e.g., "Bharatiya Nyaya Sanhita, 2023")
   sections: string; // Applicable sections (e.g., "420, 467, 468")
 }
 

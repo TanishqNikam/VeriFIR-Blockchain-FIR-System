@@ -513,7 +513,7 @@ export default function FileFIRPage() {
                   <Label htmlFor="title">{t("citizen.fileFir.offenceDescLabel")} <span className="text-destructive">*</span></Label>
                   <Input
                     id="title"
-                    placeholder="e.g. Theft of mobile phone, Assault, Cheating under IPC"
+                    placeholder="e.g. Theft of mobile phone, Assault, Cheating under BNS"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     required
@@ -546,7 +546,7 @@ export default function FileFIRPage() {
                             <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                             <td className="px-3 py-2">
                               <Input
-                                placeholder="e.g. Indian Penal Code, 1860"
+                                placeholder="e.g. Bharatiya Nyaya Sanhita, 2023"
                                 value={row.act}
                                 onChange={(e) => updateActRow(i, "act", e.target.value)}
                                 className="h-8 border-0 shadow-none px-0 focus-visible:ring-0"
