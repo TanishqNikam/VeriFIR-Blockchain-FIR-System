@@ -124,7 +124,11 @@ export async function POST(req: Request) {
     const incidentDateTo  = (formData.get("incidentDateTo") as string | null)?.trim() || undefined;
     const incidentTimeFrom = (formData.get("incidentTimeFrom") as string | null)?.trim() || undefined;
     const incidentTimeTo  = (formData.get("incidentTimeTo") as string | null)?.trim() || undefined;
-    const typeOfInformation = (formData.get("typeOfInformation") as string | null)?.trim() || undefined;
+    const _typeOfInformationRaw = (formData.get("typeOfInformation") as string | null)?.trim();
+    const typeOfInformation: "written" | "oral" | undefined =
+      _typeOfInformationRaw === "written" || _typeOfInformationRaw === "oral"
+        ? _typeOfInformationRaw
+        : undefined;
     const placeAddress    = (formData.get("placeAddress") as string | null)?.trim() || undefined;
     const distanceFromPS  = (formData.get("distanceFromPS") as string | null)?.trim() || undefined;
     const beatNo          = (formData.get("beatNo") as string | null)?.trim() || undefined;
