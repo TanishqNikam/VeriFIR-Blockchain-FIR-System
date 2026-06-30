@@ -82,11 +82,16 @@ export async function GET(
     }
 
     // ── Step 2: Recompute hash from IPFS data ─────────────────────────────────
+    // The IPFS JSON was uploaded as { ...canonical, storedHash } — storedHash was
+    // appended AFTER hashing, so it must be stripped before recomputing the hash.
+    // The original storedHash = SHA-256(JSON.stringify(canonical)) — no storedHash field.
     let ipfsHash: string | null = null;
     if (ipfsData) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { storedHash: _stripped, ...canonicalFields } = ipfsData;
       ipfsHash = crypto
         .createHash("sha256")
-        .update(JSON.stringify(ipfsData))
+        .update(JSON.stringify(canonicalFields))
         .digest("hex");
     }
 
