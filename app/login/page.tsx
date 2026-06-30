@@ -54,7 +54,6 @@ export default function LoginPage() {
       if (success) {
         toast({
           title: t("auth.loginSuccess"),
-          description: t("auth.loginSuccess"),
         })
 
         const action = searchParams.get("action")
