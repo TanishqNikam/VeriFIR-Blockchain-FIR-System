@@ -277,9 +277,10 @@ export async function getContractEvents(
 
   const latest = await provider.getBlockNumber();
 
-  // Determine start block — never scan more than 20,000 blocks (10 chunks) to stay within
-  // Alchemy free-tier rate limits. CONTRACT_DEPLOY_BLOCK is used only when it's recent enough.
-  const MAX_BLOCKS = 20000;
+  // Scan at most 5,000 blocks (~17 hours of Sepolia at 12s/block = 3 chunks = 9 Alchemy calls).
+  // Stays well within Vercel's 10s function timeout. CONTRACT_DEPLOY_BLOCK is honoured only
+  // when it falls within this window — ancient deploy blocks are ignored.
+  const MAX_BLOCKS = 5000;
   let startBlock: number;
   if (typeof fromBlock === "number" && fromBlock > 0) {
     // Explicit caller arg: honour it but still cap to avoid runaway scans

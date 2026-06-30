@@ -9,7 +9,7 @@ import { getFIRCount, getContractEvents } from "@/lib/blockchain";
 import { connectDB } from "@/lib/db";
 import FIRModel from "@/lib/models/FIR";
 
-const BLOCKCHAIN_TIMEOUT_MS = 25000;
+const BLOCKCHAIN_TIMEOUT_MS = 7000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
