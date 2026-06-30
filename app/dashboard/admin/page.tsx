@@ -142,7 +142,9 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">{log.firId}</p>
-                      <p className="text-xs text-muted-foreground truncate font-mono">{log.txHash.slice(0, 24)}...</p>
+                      <p className="text-xs text-muted-foreground truncate font-mono">
+                        {log.txHash === "pending" ? <span className="italic">Pending on-chain</span> : `${log.txHash.slice(0, 24)}...`}
+                      </p>
                     </div>
                   </div>
                 ))}

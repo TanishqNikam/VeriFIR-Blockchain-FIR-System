@@ -277,15 +277,18 @@ export async function getContractEvents(
 
   const latest = await provider.getBlockNumber();
 
-  // Determine start block: explicit caller arg > env deploy block > last 30 days (~216000 blocks, capped at 0)
+  // Determine start block — never scan more than 20,000 blocks (10 chunks) to stay within
+  // Alchemy free-tier rate limits. CONTRACT_DEPLOY_BLOCK is used only when it's recent enough.
+  const MAX_BLOCKS = 20000;
   let startBlock: number;
   if (typeof fromBlock === "number" && fromBlock > 0) {
-    startBlock = fromBlock;
+    // Explicit caller arg: honour it but still cap to avoid runaway scans
+    startBlock = Math.max(fromBlock, latest - MAX_BLOCKS);
   } else if (deployBlock !== null) {
-    startBlock = deployBlock;
+    // Deploy block might be ancient — use whichever is more recent
+    startBlock = Math.max(deployBlock, latest - MAX_BLOCKS);
   } else {
-    // Default: last 30 days worth of Sepolia blocks (~12s per block)
-    startBlock = Math.max(0, latest - 216000);
+    startBlock = Math.max(0, latest - MAX_BLOCKS);
   }
 
   // Build chunk ranges

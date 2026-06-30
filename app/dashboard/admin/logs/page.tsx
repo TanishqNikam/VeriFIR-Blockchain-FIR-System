@@ -123,13 +123,7 @@ export default function BlockchainLogsPage() {
         </Button>
       </div>
 
-      {source === "database" && !loading && (
-        <div className="flex items-center gap-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          Blockchain node is unreachable — showing records from the database. Connect your blockchain node and refresh for live on-chain data.
-        </div>
-      )}
-      {source === "unavailable" && !loading && (
+      {(source === "database" || source === "unavailable") && !loading && (
         <div className="flex items-center gap-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {t("admin.logs.blockchainUnavailable")}
@@ -142,8 +136,6 @@ export default function BlockchainLogsPage() {
           <CardDescription>
             {source === "blockchain"
               ? t("admin.logs.liveEventsDesc")
-              : source === "database"
-              ? "Showing FIR registration records from the database (blockchain node offline)"
               : t("admin.logs.eventTimelineDesc")}
           </CardDescription>
         </CardHeader>
@@ -201,18 +193,24 @@ export default function BlockchainLogsPage() {
                       <div className="space-y-2 text-xs">
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground w-20">{t("admin.logs.txHash")}</span>
-                          <code className="flex-1 bg-secondary px-2 py-1 rounded font-mono truncate">{log.txHash}</code>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(log.txHash, "Transaction Hash")}>
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                          <a
-                            href={`https://sepolia.etherscan.io/tx/${log.txHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 text-muted-foreground hover:text-primary"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
+                          <code className="flex-1 bg-secondary px-2 py-1 rounded font-mono truncate">
+                            {log.txHash === "pending" ? <span className="text-amber-600 italic">Pending on-chain</span> : log.txHash}
+                          </code>
+                          {log.txHash !== "pending" && (
+                            <>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(log.txHash, "Transaction Hash")}>
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <a
+                                href={`https://sepolia.etherscan.io/tx/${log.txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 text-muted-foreground hover:text-primary"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground w-20">{t("admin.logs.walletLabel")}</span>
