@@ -6,6 +6,7 @@ import { NotificationBell } from "@/components/dashboard/notification-bell"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageToggle } from "@/components/language-toggle"
 import { useAuth } from "@/lib/auth-context"
+import { useLanguage } from "@/lib/i18n/language-context"
 import Link from "next/link"
 import {
   DropdownMenu,
@@ -24,6 +25,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   const initials = user?.name
     ? user.name
@@ -69,7 +71,7 @@ export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
             <DropdownMenuItem asChild>
               <Link href="/dashboard/profile" className="flex items-center gap-2 cursor-pointer">
                 <Settings className="h-4 w-4" />
-                Account Settings
+                {t("header.accountSettings")}
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

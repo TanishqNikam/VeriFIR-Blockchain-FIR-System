@@ -16,11 +16,13 @@ import {
 } from "@/components/ui/select"
 import { Search, Eye, CheckCircle, XCircle, FileText } from "lucide-react"
 import { useFIRs } from "@/hooks/use-firs"
+import { useLanguage } from "@/lib/i18n/language-context"
 
 type FilterStatus = "all" | "verified" | "rejected"
 
 export default function VerifiedFIRsPage() {
   const { firs, loading, error } = useFIRs()
+  const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all")
 
@@ -45,9 +47,9 @@ export default function VerifiedFIRsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Verified FIRs</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("police.verified.title")}</h1>
         <p className="text-muted-foreground">
-          Complete record of all FIRs that have been reviewed and closed.
+          {t("police.verified.desc")}
         </p>
       </div>
 
@@ -61,7 +63,7 @@ export default function VerifiedFIRsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{closedFIRs.length}</p>
-                <p className="text-sm text-muted-foreground">Total Closed</p>
+                <p className="text-sm text-muted-foreground">{t("police.verified.totalClosed")}</p>
               </div>
             </div>
           </CardContent>
@@ -74,7 +76,7 @@ export default function VerifiedFIRsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{verifiedCount}</p>
-                <p className="text-sm text-muted-foreground">Verified</p>
+                <p className="text-sm text-muted-foreground">{t("police.verified.verified")}</p>
               </div>
             </div>
           </CardContent>
@@ -87,7 +89,7 @@ export default function VerifiedFIRsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{rejectedCount}</p>
-                <p className="text-sm text-muted-foreground">Rejected</p>
+                <p className="text-sm text-muted-foreground">{t("police.verified.rejected")}</p>
               </div>
             </div>
           </CardContent>
@@ -96,9 +98,9 @@ export default function VerifiedFIRsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Closed FIR Records</CardTitle>
+          <CardTitle>{t("police.verified.closedRecords")}</CardTitle>
           <CardDescription>
-            FIRs that have been verified and endorsed on the blockchain, or rejected with a reason.
+            {t("police.verified.closedRecordsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -107,7 +109,7 @@ export default function VerifiedFIRsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by FIR ID, citizen, title, or officer..."
+                placeholder={t("police.verified.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -115,12 +117,12 @@ export default function VerifiedFIRsPage() {
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as FilterStatus)}>
               <SelectTrigger className="w-full sm:w-44">
-                <SelectValue placeholder="Filter status" />
+                <SelectValue placeholder={t("police.verified.filterStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Closed</SelectItem>
-                <SelectItem value="verified">Verified only</SelectItem>
-                <SelectItem value="rejected">Rejected only</SelectItem>
+                <SelectItem value="all">{t("police.verified.allClosed")}</SelectItem>
+                <SelectItem value="verified">{t("police.verified.verifiedOnly")}</SelectItem>
+                <SelectItem value="rejected">{t("police.verified.rejectedOnly")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -129,21 +131,21 @@ export default function VerifiedFIRsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>FIR ID</TableHead>
-                  <TableHead>Citizen</TableHead>
-                  <TableHead className="hidden md:table-cell">Title</TableHead>
-                  <TableHead className="hidden sm:table-cell">Incident Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Handled By</TableHead>
-                  <TableHead className="hidden lg:table-cell">Closed Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("police.verified.colFirId")}</TableHead>
+                  <TableHead>{t("police.verified.colCitizen")}</TableHead>
+                  <TableHead className="hidden md:table-cell">{t("police.verified.colTitle")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">{t("police.verified.colIncidentDate")}</TableHead>
+                  <TableHead>{t("police.verified.colStatus")}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t("police.verified.colHandledBy")}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{t("police.verified.colClosedDate")}</TableHead>
+                  <TableHead className="text-right">{t("police.verified.colActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Loading records...
+                      {t("police.verified.loadingRecords")}
                     </TableCell>
                   </TableRow>
                 ) : error ? (
@@ -154,9 +156,9 @@ export default function VerifiedFIRsPage() {
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       <FileText className="mx-auto h-10 w-10 mb-3 opacity-40" />
-                      <p>No closed FIRs found.</p>
+                      <p>{t("police.verified.noClosedFIRs")}</p>
                       {closedFIRs.length === 0 && (
-                        <p className="text-xs mt-1">FIRs will appear here once they have been verified or rejected.</p>
+                        <p className="text-xs mt-1">{t("police.verified.noClosedFIRsHint")}</p>
                       )}
                     </TableCell>
                   </TableRow>
@@ -182,7 +184,7 @@ export default function VerifiedFIRsPage() {
                         <Button variant="outline" size="sm" asChild>
                           <Link href={`/dashboard/police/verified/${fir.id}`}>
                             <Eye className="h-4 w-4 mr-1" />
-                            View
+                            {t("common.view")}
                           </Link>
                         </Button>
                       </TableCell>
@@ -194,7 +196,7 @@ export default function VerifiedFIRsPage() {
           </div>
 
           <p className="mt-4 text-sm text-muted-foreground">
-            Showing {filteredFIRs.length} of {closedFIRs.length} closed records
+            {t("common.showing")} {filteredFIRs.length} {t("common.of")} {closedFIRs.length} {t("police.verified.closedRecordsLabel")}
           </p>
         </CardContent>
       </Card>

@@ -33,10 +33,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems: NavItem[] = [
     { label: t("sidebar.adminNav.dashboard"), href: "/dashboard/admin", icon: LayoutDashboard },
     { label: t("sidebar.adminNav.allFirs"), href: "/dashboard/admin/all-firs", icon: FileText },
-    { label: "User Management", href: "/dashboard/admin/users", icon: Users },
+    { label: t("sidebar.adminNav.userManagement"), href: "/dashboard/admin/users", icon: Users },
     { label: t("sidebar.adminNav.blockchainLogs"), href: "/dashboard/admin/logs", icon: LinkIcon },
     { label: t("sidebar.adminNav.reports"), href: "/dashboard/admin/reports", icon: BarChart3 },
-    { label: "System Health", href: "/dashboard/admin/health", icon: Activity },
+    { label: t("sidebar.adminNav.systemHealth"), href: "/dashboard/admin/health", icon: Activity },
   ]
 
   return (

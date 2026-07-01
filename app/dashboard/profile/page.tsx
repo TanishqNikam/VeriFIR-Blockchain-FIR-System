@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
+import { useLanguage } from "@/lib/i18n/language-context"
 import { User, Mail, Phone, Shield, BadgeCheck, Building2, Calendar, Loader2, Save, ArrowLeft, KeyRound, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 
@@ -29,6 +30,7 @@ interface ProfileData {
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading } = useAuth()
   const { toast } = useToast()
+  const { t } = useLanguage()
   const router = useRouter()
 
   useEffect(() => {
@@ -68,13 +70,13 @@ export default function ProfilePage() {
         setBadgeNumber(data.badgeNumber ?? "")
         setPoliceStation(data.policeStation ?? "")
       } catch {
-        toast({ title: "Error", description: "Could not load profile.", variant: "destructive" })
+        toast({ title: t("common.error"), description: t("profile.loadError"), variant: "destructive" })
       } finally {
         setLoading(false)
       }
     }
     fetchProfile()
-  }, [toast])
+  }, [toast, t])
 
   const handleSave = async () => {
     setSaving(true)
@@ -98,9 +100,9 @@ export default function ProfilePage() {
         const err = await res.json()
         throw new Error(err.error || "Update failed")
       }
-      toast({ title: "Profile Updated", description: "Your profile has been saved successfully." })
+      toast({ title: t("profile.updateSuccess"), description: t("profile.updateSuccessDesc") })
     } catch (err) {
-      toast({ title: "Update Failed", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" })
+      toast({ title: t("profile.updateFailed"), description: err instanceof Error ? err.message : t("common.error"), variant: "destructive" })
     } finally {
       setSaving(false)
     }
@@ -108,15 +110,15 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (!pwForm.oldPassword || !pwForm.newPassword || !pwForm.confirmPassword) {
-      toast({ title: "Validation Error", description: "All password fields are required.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("sidebar.allFieldsRequired"), variant: "destructive" })
       return
     }
     if (pwForm.newPassword !== pwForm.confirmPassword) {
-      toast({ title: "Validation Error", description: "New passwords do not match.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("sidebar.passwordsNotMatch"), variant: "destructive" })
       return
     }
     if (pwForm.newPassword.length < 8) {
-      toast({ title: "Validation Error", description: "New password must be at least 8 characters.", variant: "destructive" })
+      toast({ title: t("auth.validationError"), description: t("sidebar.passwordMinLength"), variant: "destructive" })
       return
     }
     setSavingPw(true)
@@ -128,10 +130,10 @@ export default function ProfilePage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast({ title: "Password Changed", description: "Your password has been updated successfully." })
+      toast({ title: t("sidebar.passwordChanged"), description: t("sidebar.passwordUpdated") })
       setPwForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
     } catch (e) {
-      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to change password.", variant: "destructive" })
+      toast({ title: t("common.error"), description: e instanceof Error ? e.message : t("common.error"), variant: "destructive" })
     } finally {
       setSavingPw(false)
     }
@@ -149,7 +151,7 @@ export default function ProfilePage() {
 
   if (!profile) return null
 
-  const roleLabel = profile.role === "citizen" ? "Citizen" : profile.role === "police" ? "Police Officer" : "Administrator"
+  const roleLabel = profile.role === "citizen" ? t("auth.citizen") : profile.role === "police" ? t("auth.policeOfficer") : t("auth.adminAuditor")
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 p-4 lg:p-6">
@@ -159,8 +161,8 @@ export default function ProfilePage() {
           <Link href={dashboardHref}><ArrowLeft className="h-4 w-4" /></Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
-          <p className="text-muted-foreground text-sm">View and update your account details</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("profile.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("profile.desc")}</p>
         </div>
       </div>
 
@@ -178,7 +180,7 @@ export default function ProfilePage() {
                 {roleLabel}
                 {profile.emailVerified && (
                   <span className="flex items-center gap-1 text-success text-xs ml-2">
-                    <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                    <BadgeCheck className="h-3.5 w-3.5" /> {t("profile.verified")}
                   </span>
                 )}
               </CardDescription>
@@ -189,18 +191,18 @@ export default function ProfilePage() {
 
           {/* Account Info (read-only) */}
           <div className="rounded-lg bg-muted/50 border border-border p-4 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Account Information</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("profile.accountInfo")}</p>
             <div className="flex items-center gap-3 text-sm">
               <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground">Email</p>
+                <p className="text-xs text-muted-foreground">{t("profile.email")}</p>
                 <p className="font-medium text-foreground">{profile.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 text-sm">
               <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground">User ID</p>
+                <p className="text-xs text-muted-foreground">{t("profile.userId")}</p>
                 <p className="font-mono text-xs text-foreground">{profile.userId}</p>
               </div>
             </div>
@@ -208,7 +210,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3 text-sm">
                 <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Jurisdiction Pincode</p>
+                  <p className="text-xs text-muted-foreground">{t("profile.jurisdictionPincode")}</p>
                   <p className="font-medium text-foreground">{profile.pincode}</p>
                 </div>
               </div>
@@ -217,18 +219,18 @@ export default function ProfilePage() {
 
           {/* Editable fields */}
           <div className="space-y-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Personal Details</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("profile.personalDetails")}</p>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">{t("auth.fullName")}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="pl-9" placeholder="Your full name" />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="pl-9" placeholder={t("profile.fullNamePlaceholder")} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone">{t("auth.phone")}</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -236,7 +238,7 @@ export default function ProfilePage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   className="pl-9"
-                  placeholder="10-digit mobile number"
+                  placeholder={t("auth.phonePlaceholder")}
                   inputMode="numeric"
                 />
               </div>
@@ -246,22 +248,22 @@ export default function ProfilePage() {
             {profile.role === "citizen" && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender">{t("auth.gender")}</Label>
                   <select
                     id="gender"
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="">{t("auth.selectGender")}</option>
+                    <option value="male">{t("auth.male")}</option>
+                    <option value="female">{t("auth.female")}</option>
+                    <option value="other">{t("auth.other")}</option>
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Label htmlFor="dob">{t("auth.dateOfBirth")}</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -281,18 +283,18 @@ export default function ProfilePage() {
             {profile.role === "police" && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="badge">Badge Number</Label>
+                  <Label htmlFor="badge">{t("profile.badgeLabel")}</Label>
                   <div className="relative">
                     <BadgeCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="badge" value={badgeNumber} onChange={(e) => setBadgeNumber(e.target.value)} className="pl-9" placeholder="e.g. MP/2024/001" />
+                    <Input id="badge" value={badgeNumber} onChange={(e) => setBadgeNumber(e.target.value)} className="pl-9" placeholder={t("profile.badgePlaceholder")} />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="station">Police Station</Label>
+                  <Label htmlFor="station">{t("admin.users.policeStation")}</Label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="station" value={policeStation} onChange={(e) => setPoliceStation(e.target.value)} className="pl-9" placeholder="e.g. Navrangpura P.S." />
+                    <Input id="station" value={policeStation} onChange={(e) => setPoliceStation(e.target.value)} className="pl-9" placeholder={t("profile.stationPlaceholder")} />
                   </div>
                 </div>
               </>
@@ -301,7 +303,7 @@ export default function ProfilePage() {
 
           {/* Save button */}
           <Button onClick={handleSave} disabled={saving || !name.trim()} className="w-full">
-            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
+            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("profile.saving")}</> : <><Save className="mr-2 h-4 w-4" /> {t("profile.saveChanges")}</>}
           </Button>
 
 
@@ -312,20 +314,20 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <KeyRound className="h-4 w-4" /> Change Password
+            <KeyRound className="h-4 w-4" /> {t("sidebar.changePassword")}
           </CardTitle>
-          <CardDescription>Update your account password</CardDescription>
+          <CardDescription>{t("profile.changePwDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="old-password">Current Password</Label>
+            <Label htmlFor="old-password">{t("sidebar.currentPassword")}</Label>
             <div className="relative">
               <Input
                 id="old-password"
                 type={showOld ? "text" : "password"}
                 value={pwForm.oldPassword}
                 onChange={(e) => setPwForm((p) => ({ ...p, oldPassword: e.target.value }))}
-                placeholder="Enter current password"
+                placeholder={t("sidebar.enterCurrentPassword")}
                 className="pr-10"
               />
               <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowOld((v) => !v)}>
@@ -335,14 +337,14 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="new-password">New Password</Label>
+            <Label htmlFor="new-password">{t("sidebar.newPassword")}</Label>
             <div className="relative">
               <Input
                 id="new-password"
                 type={showNew ? "text" : "password"}
                 value={pwForm.newPassword}
                 onChange={(e) => setPwForm((p) => ({ ...p, newPassword: e.target.value }))}
-                placeholder="At least 8 characters"
+                placeholder={t("sidebar.atLeast8Chars")}
                 className="pr-10"
               />
               <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowNew((v) => !v)}>
@@ -352,14 +354,14 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Label htmlFor="confirm-password">{t("sidebar.confirmNewPassword")}</Label>
             <div className="relative">
               <Input
                 id="confirm-password"
                 type={showConfirm ? "text" : "password"}
                 value={pwForm.confirmPassword}
                 onChange={(e) => setPwForm((p) => ({ ...p, confirmPassword: e.target.value }))}
-                placeholder="Re-enter new password"
+                placeholder={t("sidebar.reEnterNewPassword")}
                 className="pr-10"
               />
               <button type="button" className="absolute right-3 top-2.5 text-muted-foreground" onClick={() => setShowConfirm((v) => !v)}>
@@ -367,12 +369,12 @@ export default function ProfilePage() {
               </button>
             </div>
             {pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && (
-              <p className="text-xs text-destructive">Passwords do not match</p>
+              <p className="text-xs text-destructive">{t("profile.pwMismatch")}</p>
             )}
           </div>
 
           <Button onClick={handleChangePassword} disabled={savingPw} className="w-full">
-            {savingPw ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</> : <><KeyRound className="mr-2 h-4 w-4" /> Update Password</>}
+            {savingPw ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("profile.updating")}</> : <><KeyRound className="mr-2 h-4 w-4" /> {t("sidebar.updatePassword")}</>}
           </Button>
         </CardContent>
       </Card>
