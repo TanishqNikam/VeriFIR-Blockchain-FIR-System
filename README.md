@@ -19,8 +19,10 @@
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.19-363636?style=flat-square&logo=solidity)](https://soliditylang.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
 [![IPFS](https://img.shields.io/badge/IPFS-Pinata-65C2CB?style=flat-square&logo=ipfs)](https://pinata.cloud/)
-[![Hardhat](https://img.shields.io/badge/Hardhat-2.22-F7DF1E?style=flat-square)](https://hardhat.org/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red?style=flat-square)](LICENSE)
+[![Live](https://img.shields.io/badge/Live-getverifir.vercel.app-00c853?style=flat-square&logo=vercel&logoColor=white)](https://getverifir.vercel.app/)
+
+**Live Deployment:** [getverifir.vercel.app](https://getverifir.vercel.app/)
 
 [Overview](#-overview) · [Features](#-features) · [Tech Stack](#-tech-stack) · [Architecture](#-architecture) · [Getting Started](#-getting-started) · [Demo](#-demo-accounts) · [API](#-api-reference)
 
@@ -96,8 +98,7 @@ SHA-256 hash computed from core FIR fields
 | **Frontend** | React 19, TypeScript 5 | UI & type safety |
 | **Styling** | Tailwind CSS 4, Radix UI | Accessible, responsive design system |
 | **Database** | MongoDB + Mongoose 9 | Primary persistent store |
-| **Blockchain** | Solidity 0.8.19, Ethers.js 6 | Smart contract & on-chain interaction |
-| **Dev Chain** | Hardhat 2.22 | Local Ethereum node & deployment |
+| **Blockchain** | Solidity 0.8.19, Ethers.js 6 | Smart contract & on-chain interaction (deployed on Sepolia) |
 | **Storage** | IPFS via Pinata | Evidence files + FIR metadata JSON |
 | **Auth** | Custom HMAC-SHA256 | HTTP-only session cookies, no JWT libraries |
 | **Password** | PBKDF2-SHA512 | 100k iterations + unique salt per user |
@@ -123,7 +124,7 @@ SHA-256 hash computed from core FIR fields
 │                            │                                 │
 │                    ┌───────▼────────┐                        │
 │                    │  API Routes    │                        │
-│                    │  (18 routes)   │                        │
+│                    │  (24 routes)   │                        │
 │                    └───────┬────────┘                        │
 └────────────────────────────┼────────────────────────────────┘
                              │
@@ -159,28 +160,27 @@ All blockchain writes are **non-blocking** — FIR creation never fails due to c
 
 ## 🚀 Getting Started
 
+> **Note:** `FIRRegistry.sol` is already deployed and live on Ethereum Sepolia — local development connects to that shared contract via RPC rather than deploying a fresh instance. The steps below get the Next.js app itself running locally.
+
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 16+
+- [Node.js](https://nodejs.org/) 18+
 - [MongoDB](https://www.mongodb.com/) (local or [Atlas](https://www.mongodb.com/atlas))
 - [Pinata](https://pinata.cloud/) account (free tier sufficient)
+- A Sepolia RPC endpoint (e.g. [Alchemy](https://www.alchemy.com/) or [Infura](https://www.infura.io/)) and Sepolia-funded signer wallets — required only for blockchain-write functionality
 - Git
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/verifir-blockchain-fir-system.git
-cd verifir-blockchain-fir-system
+git clone https://github.com/TanishqNikam/VeriFIR-Blockchain-FIR-System.git
+cd VeriFIR-Blockchain-FIR-System
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-# Install Next.js app dependencies
 npm install
-
-# Install Hardhat blockchain dependencies
-cd blockchain && npm install && cd ..
 ```
 
 ### 3. Configure Environment Variables
@@ -189,63 +189,11 @@ cd blockchain && npm install && cd ..
 cp .env.local.example .env.local
 ```
 
-Open `.env.local` and fill in the required values:
-
-```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/verifir
-
-# IPFS — get from https://pinata.cloud
-PINATA_API_KEY=your_pinata_api_key
-PINATA_SECRET_KEY=your_pinata_secret_key
-
-# Blockchain (filled automatically after step 5)
-RPC_URL=http://127.0.0.1:8545
-CONTRACT_ADDRESS=
-
-# Hardhat dev account private keys (pre-filled for local dev)
-DEPLOYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-POLICE_SIGNER_PRIVATE_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-CITIZEN_SIGNER_PRIVATE_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
-
-# Session (generate a random 32+ char string for production)
-SESSION_SECRET=verifir-dev-secret-change-this-in-production
-
-# Email (optional — notifications are silently disabled if not set)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your@gmail.com
-SMTP_PASS=your_app_password
-EMAIL_FROM="VeriFIR <noreply@verifir.in>"
-```
+Open `.env.local` and fill in the required values — see `.env.local.example` in the repo for the full list (MongoDB, Pinata, Sepolia RPC + contract address, signer private keys, session secret, and optional SMTP settings).
 
 > ⚠️ **Never commit `.env.local`** — it is gitignored by default.
 
-### 4. Start the Local Blockchain
-
-Open a terminal and start the Hardhat node:
-
-```bash
-cd blockchain
-npx hardhat node
-```
-
-Keep this terminal running. It will display 20 pre-funded test accounts.
-
-### 5. Deploy the Smart Contract
-
-Open a second terminal:
-
-```bash
-cd blockchain
-npm run deploy
-```
-
-This compiles `FIRRegistry.sol`, deploys it to the local Hardhat node, authorises the signer wallets, and prints the contract address. Copy the address into `CONTRACT_ADDRESS` in your `.env.local`.
-
-### 6. Start the Application
-
-Open a third terminal:
+### 4. Start the Application
 
 ```bash
 npm run dev
@@ -257,32 +205,30 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🔐 Demo Accounts
 
-Demo accounts are **automatically seeded** into MongoDB on the first login — no manual setup required.
-
 | Role | Email | Password | Jurisdiction |
 |---|---|---|---|
-| **Citizen** | `citizen@verifir.in` | `citizen123` | — |
-| **Police Officer 1** | `police@verifir.in` | `police123` | Pincode 411007 (Pune — Kothrud) |
-| **Police Officer 2** | `police2@verifir.in` | `police123` | Pincode 411005 (Pune — Shivajinagar) |
 | **Administrator** | `admin@verifir.in` | `admin123` | All jurisdictions |
 
-> FIRs filed with pincode `411007` appear on Police Officer 1's dashboard; those filed with `411005` appear on Police Officer 2's dashboard.
+> Only the admin demo account is currently active on the live deployment. Citizen and police accounts can be created via the registration flow (citizens self-register; police/admin accounts are created by an admin via `/api/admin/users`).
 
 ---
 
 ## 📁 Project Structure
 
 ```
-verifir-blockchain-fir-system/
+VeriFIR-Blockchain-FIR-System/
 │
 ├── app/                          # Next.js App Router
-│   ├── api/                      # 18 API route handlers
-│   │   ├── auth/                 # login, logout, register, me, password reset
+│   ├── api/                      # API route handlers
+│   │   ├── auth/                 # login, logout, register, me, verify-email,
+│   │   │                         # resend-otp, change-password, profile, password reset
 │   │   ├── fir/                  # CRUD, appeal, evidence, notes, deep-verify
-│   │   ├── admin/                # user management
+│   │   ├── admin/                # user management, retry-blockchain, backfill-officers
 │   │   ├── blockchain-stats/     # on-chain statistics
+│   │   ├── blockchain-events/    # on-chain event feed (with DB fallback)
 │   │   ├── audit/                # audit log access
 │   │   ├── notifications/        # in-app notifications
+│   │   ├── health/               # service health check (db/blockchain/ipfs)
 │   │   └── sse/                  # Server-Sent Events stream
 │   │
 │   ├── dashboard/
@@ -295,13 +241,8 @@ verifir-blockchain-fir-system/
 │   ├── forgot-password/          # Password reset request
 │   └── reset-password/           # Password reset form
 │
-├── blockchain/                   # Hardhat project
-│   ├── contracts/
-│   │   └── FIRRegistry.sol       # Main smart contract
-│   ├── scripts/
-│   │   └── deploy.ts             # Deployment script
-│   ├── test/                     # Contract tests
-│   └── hardhat.config.ts
+├── contracts/
+│   └── FIRRegistry.sol           # Main smart contract (deployed on Sepolia)
 │
 ├── components/                   # Reusable React components
 │   ├── dashboard/                # Sidebar, status badges, timeline
@@ -320,7 +261,7 @@ verifir-blockchain-fir-system/
 │   ├── api-auth.ts               # requireSession, getSession helpers
 │   ├── audit.ts                  # Immutable audit logging
 │   ├── auth-context.tsx          # AuthProvider + useAuth hook
-│   ├── blockchain.ts             # Ethers.js contract interaction
+│   ├── blockchain.ts             # Ethers.js contract interaction (Sepolia RPC)
 │   ├── db.ts                     # MongoDB singleton connection
 │   ├── email.ts                  # Nodemailer SMTP wrapper
 │   ├── file-validation.ts        # Magic-byte file type checking
@@ -334,7 +275,6 @@ verifir-blockchain-fir-system/
 │
 ├── middleware.ts                 # Route protection & role-based redirects
 ├── next.config.mjs
-├── tailwind.config.ts
 └── tsconfig.json
 ```
 
@@ -347,9 +287,13 @@ verifir-blockchain-fir-system/
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | Public | Login — rate limited 10/15min/IP |
-| `POST` | `/api/auth/register` | Public | Create new account |
+| `POST` | `/api/auth/register` | Public | Create new citizen account (unverified until OTP confirmed) |
+| `POST` | `/api/auth/verify-email` | Public | Confirm registration OTP |
+| `POST` | `/api/auth/resend-otp` | Public | Resend a new verification OTP |
 | `POST` | `/api/auth/logout` | Any | Clear session cookie |
 | `GET` | `/api/auth/me` | Any | Get current session user |
+| `GET/PATCH` | `/api/auth/profile` | Any auth | View/update own profile fields |
+| `POST` | `/api/auth/change-password` | Any auth | Change own password (requires current password) |
 | `POST` | `/api/auth/forgot-password` | Public | Request password reset email |
 | `POST` | `/api/auth/reset-password` | Public | Reset with token (1hr expiry) |
 
@@ -359,10 +303,9 @@ verifir-blockchain-fir-system/
 |---|---|---|---|
 | `POST` | `/api/fir` | Citizen | File new FIR — rate limited 5/hr |
 | `GET` | `/api/fir` | Any auth | List FIRs (role-scoped by server) |
-| `GET` | `/api/fir/:id` | Any auth | FIR detail + integrity verification |
+| `GET` | `/api/fir/:id` | Any auth | FIR detail — recomputes SHA-256 hash and compares against the stored value and on-chain record inline |
 | `PATCH` | `/api/fir/:id` | Police/Admin | Update status (verify/reject/review) |
 | `POST` | `/api/fir/:id/appeal` | Citizen | Appeal a rejected FIR |
-| `GET` | `/api/fir/:id/deep-verify` | Any auth | IPFS + chain gold-standard verify |
 | `POST` | `/api/fir/:id/evidence` | Citizen/Police | Upload evidence — rate limited 20/hr |
 | `POST` | `/api/fir/:id/notes` | Police/Admin | Add investigation note |
 
@@ -371,8 +314,12 @@ verifir-blockchain-fir-system/
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `GET/POST/PATCH/DELETE` | `/api/admin/users` | Admin | Full user management |
+| `POST` | `/api/admin/retry-blockchain` | Admin | Retry on-chain registration for pending FIRs |
+| `GET/POST` | `/api/admin/backfill-officers` | Admin | Diagnose/backfill missing police-verifier assignments |
 | `GET` | `/api/audit` | Admin | Immutable audit log |
 | `GET` | `/api/blockchain-stats` | Any auth | On-chain statistics |
+| `GET` | `/api/blockchain-events` | Public | On-chain event feed (falls back to DB if chain is unavailable) |
+| `GET` | `/api/health` | Public | Service health check (database, blockchain, IPFS) |
 | `GET` | `/api/notifications` | Any auth | User notifications |
 | `GET` | `/api/sse` | Any auth | Server-Sent Events stream |
 
@@ -396,8 +343,8 @@ verifir-blockchain-fir-system/
 
 ## 🗺 Roadmap
 
-- [ ] Deploy to Ethereum Sepolia testnet
-- [ ] Host on Vercel + MongoDB Atlas
+- [x] Deploy to Ethereum Sepolia testnet
+- [x] Host on Vercel + MongoDB Atlas
 - [ ] MetaMask wallet integration for citizens
 - [ ] Multi-police-station support per pincode
 - [ ] Admin pincode map visualisation
@@ -408,23 +355,20 @@ verifir-blockchain-fir-system/
 
 ---
 
-## 🤝 Contributing
+## 👤 Author
 
-Contributions, issues, and feature requests are welcome.
+**Tanishq Nikam**
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/your-feature-name`
-3. Commit your changes: `git commit -m 'feat: add some feature'`
-4. Push to the branch: `git push origin feat/your-feature-name`
-5. Open a Pull Request
-
-Please follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
+- Portfolio: [tanishqnikam.vercel.app](https://tanishqnikam.vercel.app)
+- LinkedIn: [linkedin.com/in/tanishqnikam](https://linkedin.com/in/tanishqnikam)
+- GitHub: [@TanishqNikam](https://github.com/TanishqNikam)
+- Email: [tanishqnikam11@gmail.com](mailto:tanishqnikam11@gmail.com)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+All Rights Reserved. This repository is public for portfolio and demonstration purposes only — viewing or forking it does not grant permission to reuse, copy, or redistribute its contents. See [LICENSE](LICENSE) for details.
 
 ---
 
